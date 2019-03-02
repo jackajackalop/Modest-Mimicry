@@ -13,10 +13,6 @@
 #include "load_save_png.hpp"
 #include "scene_program.hpp"
 #include "depth_program.hpp"
-#include "mrt_blur_program.hpp"
-#include "surface_program.hpp"
-#include "stylize_program.hpp"
-#include "http-tweak/tweak.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -26,9 +22,6 @@
 #include <cstddef>
 #include <random>
 
-#ifndef TWEAK_ENABLE
-#error "poop"
-#endif
 Load< MeshBuffer > meshes(LoadTagDefault, [](){
 	return new MeshBuffer(data_path("test.pgct"));
 });
@@ -138,42 +131,7 @@ Scene::Camera *camera = nullptr;
 //Scene::Transform *spot_parent_transform = nullptr;
 //Scene::Lamp *spot = nullptr;
 
-enum Stages{
-    VERTEX_COLORS=0,
-    CONTROL_COLORS=1,
-    HAND_TREMORS=2,
-    PIGMENT=3,
-    GAUSSIAN_BLUR=4,
-    BILATERAL_BLUR=5,
-    SURFACE=6,
-    FINAL=7
-};
-
 float elapsed_time = 0.0f;
-float speed = 5.f;
-float frequency = 0.2f;
-float tremor_amount = 1.f;
-float dA = 0.2f;
-float cangiante_variable = 0.1f;
-float dilution_variable = 0.35f;
-//int show = GAUSSIAN_BLUR;
-int show = BILATERAL_BLUR;
-float depth_threshold = 0.5f;
-int blur_amount = 5;
-
-//Gaussian weights
-float w1[1] = {1.f};
-float w2[2] = {0.44198f, 0.27901f};
-float w3[3] = {0.250301f, 0.221461, 0.153388f};
-float w4[4] = {0.214607f, 0.189879f, 0.131514f, 0.071303f};
-float w5[5] = {0.20236f, 0.179044f, 0.124009f, 0.067234f, 0.028532f};
-float w6[6] = {0.141836f, 0.13424f, 0.113806f, 0.086425f, 0.05879f, 0.035822f};
-float w7[7] = {0.136498f, 0.129188f, 0.109523f, 0.083173f, 0.056577f, 0.034474f, 0.018816f};
-float w8[8] = {0.105915f, 0.102673f, 0.093531f, 0.080066f, 0.064408f, 0.048689f, 0.034587f, 0.023089f};
-float w9[9] = {0.102934f, 0.099783f, 0.090898f, 0.077812f, 0.062595f, 0.047318f, 0.033613f, 0.022439f, 0.014076f};
-float w10[10] = {0.101253f, 0.098154f, 0.089414f, 0.076542f, 0.061573f, 0.046546f, 0.033065f, 0.022072f, 0.013846f, 0.008162f};
-
-float* weight_arrays[] = {w1, w2, w3, w4, w5, w6, w7, w8, w9, w10};
 
 Load< Scene > scene(LoadTagDefault, [](){
 	Scene *ret = new Scene;
@@ -248,16 +206,6 @@ Load< Scene > scene(LoadTagDefault, [](){
 	}
 	if (!spot) throw std::runtime_error("No 'Spot' spotlight in scene.");
 */
-    TWEAK_CONFIG(8888, data_path("../http-tweak/tweak-ui.html"));
-    static TWEAK(speed);
-    static TWEAK(frequency);
-    static TWEAK(tremor_amount);
-    static TWEAK_HINT(dA, "float 0.0001 1.0");
-    static TWEAK_HINT(cangiante_variable, "float 0.0 1.0");
-    static TWEAK_HINT(dilution_variable, "float 0.0 1.0");
-    static TWEAK_HINT(show, "int 0 7");
-    static TWEAK_HINT(depth_threshold, "float 0.0 1.0");
-    static TWEAK_HINT(blur_amount, "int 0 10");
 	return ret;
 });
 
@@ -292,7 +240,6 @@ void GameMode::update(float elapsed) {
 	camera_parent_transform->rotation = glm::angleAxis(camera_spin, glm::vec3(0.0f, 0.0f, 1.0f));
 //	spot_parent_transform->rotation = glm::angleAxis(spot_spin, glm::vec3(0.0f, 0.0f, 1.0f));
     elapsed_time+=elapsed;
-    TWEAK_SYNC();
 }
 
 //GameMode will render to some offscreen framebuffer(s).
@@ -300,16 +247,8 @@ void GameMode::update(float elapsed) {
 struct Textures {
 	glm::uvec2 size = glm::uvec2(0,0); //remember the size of the framebuffer
 
-    GLuint control_tex = 0;
 	GLuint color_tex = 0;
 	GLuint depth_tex = 0;
-    GLuint blurred_tex = 0;
-    GLuint bleeded_tex = 0;
-    GLuint surface_tex = 0;
-    GLuint final_tex = 0;
-    GLuint temp_tex1 = 0;
-    GLuint temp_tex2 = 0;
-    GLuint temp_tex3 = 0;
 	void allocate(glm::uvec2 const &new_size) {
     //allocate full-screen framebuffer:
 
@@ -328,53 +267,29 @@ struct Textures {
 			    glBindTexture(GL_TEXTURE_2D, 0);
             };
 
-            alloc_tex(&control_tex, GL_RGBA32F, GL_RGBA);
             alloc_tex(&color_tex, GL_RGBA8, GL_RGBA);
             alloc_tex(&depth_tex, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT);
-            alloc_tex(&blurred_tex, GL_RGBA32F, GL_RGBA);
-            alloc_tex(&temp_tex1, GL_RGBA32F, GL_RGBA);
-            alloc_tex(&temp_tex2, GL_RGBA32F, GL_RGBA);
-            alloc_tex(&temp_tex3, GL_RGBA32F, GL_RGBA);
-            alloc_tex(&bleeded_tex, GL_RGBA32F, GL_RGBA);
-            alloc_tex(&surface_tex, GL_RGBA8, GL_RGBA);
-            alloc_tex(&final_tex, GL_RGBA8, GL_RGBA);
 			GL_ERRORS();
 		}
 
 	}
 } textures;
 
-void GameMode::draw_scene(GLuint* color_tex_, GLuint* control_tex_,
-                        GLuint* depth_tex_){
+void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_){
     assert(color_tex_);
-    assert(control_tex_);
     assert(depth_tex_);
     auto &color_tex = *color_tex_;
-    auto &control_tex = *control_tex_;
     auto &depth_tex = *depth_tex_;
 
-    float dA0 = dA;
-    float cangiante_variable0 = cangiante_variable;
-    float dilution_variable0 = dilution_variable;
-    float speed0 = speed;
-    if(show < PIGMENT){
-        dA = 0.f;
-        cangiante_variable = 0.f;
-        dilution_variable = 0.f;
-        if(show<HAND_TREMORS)
-            speed = 0.f;
-    }
     static GLuint fb = 0;
     if(fb==0) glGenFramebuffers(1, &fb);
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                             color_tex, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
-                            control_tex, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
                             depth_tex, 0);
-    GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-    glDrawBuffers(2, bufs);
+    GLenum bufs[1] = {GL_COLOR_ATTACHMENT0};
+    glDrawBuffers(1, bufs);
     check_fb();
 
 
@@ -397,226 +312,16 @@ void GameMode::draw_scene(GLuint* color_tex_, GLuint* control_tex_,
 
 	glUseProgram(scene_program->program);
 
-	//don't use distant directional light at all (color == 0):
-	glUniform3fv(scene_program->sun_color_vec3, 1, glm::value_ptr(glm::vec3(0.5f, 0.5f, 0.5f)));
-	glUniform3fv(scene_program->sun_direction_vec3, 1, glm::value_ptr(glm::normalize(glm::vec3(0.5f, 0.1f, 1.f))));
-	//use hemisphere light for subtle ambient light:
-	glUniform3fv(scene_program->sky_color_vec3, 1, glm::value_ptr(glm::vec3(0.f, 0.f, 0.f)));
-	glUniform3fv(scene_program->sky_direction_vec3, 1, glm::value_ptr(glm::vec3(0.0f, 0.0f, 1.0f)));
     glUniform1f(scene_program->time, elapsed_time);
-    glUniform1f(scene_program->speed, speed);
-    glUniform1f(scene_program->frequency, frequency);
-    glUniform1f(scene_program->tremor_amount, tremor_amount);
-    glUniform2fv(scene_program->clip_units_per_pixel, 1,
-        glm::value_ptr(glm::vec2(2.f/textures.size.x, 2.f/textures.size.y)));
     glUniform3fv(scene_program->viewPos, 1,
             glm::value_ptr(camera->transform->make_local_to_world()));
-    glUniform1f(scene_program->dA, dA);
-    glUniform1f(scene_program->cangiante_variable, cangiante_variable);
-    glUniform1f(scene_program->dilution_variable, dilution_variable);
     scene->draw(camera);
-    dA = dA0;
-    cangiante_variable = cangiante_variable0;
-    dilution_variable = dilution_variable0;
-    speed = speed0;
-}
-
-void GameMode::get_weights(){
-    if(blur_amount>0 && blur_amount<=10){
-        auto to_copy = weight_arrays[blur_amount-1];
-        for(int i = 0; i<blur_amount; i++){
-            weights[i] = to_copy[i];
-        }
-    }
-}
-
-void GameMode::draw_mrt_blur(GLuint color_tex, GLuint control_tex,
-                            GLuint depth_tex, GLuint *temp_tex1_, GLuint *temp_tex2_,
-                            GLuint *temp_tex3_, GLuint* blurred_tex_, GLuint* bleeded_tex_){
-    assert(blurred_tex_);
-    assert(bleeded_tex_);
-    assert(temp_tex1_);
-    assert(temp_tex2_);
-    assert(temp_tex3_);
-    auto &temp_tex1 = *temp_tex1_;
-    auto &temp_tex2 = *temp_tex2_;
-    auto &temp_tex3 = *temp_tex3_;
-    auto &blurred_tex = *blurred_tex_;
-    auto &bleeded_tex = *bleeded_tex_;
-
-    static GLuint fb = 0;
-    if(fb==0) glGenFramebuffers(1, &fb);
-    glBindFramebuffer(GL_FRAMEBUFFER, fb);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                            temp_tex1, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
-                            temp_tex2, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
-                            temp_tex3, 0);
-
-    {
-        GLenum bufs[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
-        glDrawBuffers(3, bufs);
-    }
-    check_fb();
-
-    //set glViewport
-	glBindFramebuffer(GL_FRAMEBUFFER, fb);
-	glViewport(0,0, textures.size.x, textures.size.y);
-	camera->aspect = textures.size.x / float(textures.size.y);
-
-    GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    glClearBufferfv(GL_COLOR, 0, black);
-    glClearBufferfv(GL_COLOR, 1, black);
-
-	//set up basic OpenGL state:
-	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_BLEND);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, color_tex);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, color_tex);
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, control_tex);
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, depth_tex);
-
-    glUseProgram(mrt_blurH_program->program);
-    glUniform1f(mrt_blurH_program->depth_threshold, depth_threshold);
-    glUniform1i(mrt_blurH_program->blur_amount, blur_amount);
-    get_weights();
-    glUniform1fv(mrt_blurH_program->weights, 20, weights);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-
-    //blurred_tex = temp_tex1;
-    //bleeded_tex = temp_tex2;
-    //control_tex = temp_tex3;
-
-    static GLuint fb2 = 0;
-    if(fb2==0) glGenFramebuffers(1, &fb2);
-    glBindFramebuffer(GL_FRAMEBUFFER, fb2);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                            blurred_tex, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
-                            bleeded_tex, 0);
-    {
-        GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-        glDrawBuffers(2, bufs);
-    }
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, temp_tex1);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, temp_tex2);
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, temp_tex3);
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, depth_tex);
-
-    glUseProgram(mrt_blurV_program->program);
-    glUniform1f(mrt_blurV_program->depth_threshold, depth_threshold);
-    glUniform1i(mrt_blurV_program->blur_amount, blur_amount);
-    glUniform1fv(mrt_blurV_program->weights, 20, weights);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    //TODO unbind textues
-
-}
-
-void GameMode::draw_surface(GLuint paper_tex, GLuint normal_map_tex,
-                            GLuint* surface_tex_){
-    assert(surface_tex_);
-    auto &surface_tex = *surface_tex_;
-
-    static GLuint fb = 0;
-    if(fb==0) glGenFramebuffers(1, &fb);
-    glBindFramebuffer(GL_FRAMEBUFFER, fb);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                            surface_tex, 0);
-
-    GLenum bufs[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, bufs);
-    check_fb();
-
-    //set glViewport
-	glBindFramebuffer(GL_FRAMEBUFFER, fb);
-	glViewport(0,0, textures.size.x, textures.size.y);
-	camera->aspect = textures.size.x / float(textures.size.y);
-
-    GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    glClearBufferfv(GL_COLOR, 0, black);
-
-	//set up basic OpenGL state:
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendEquation(GL_FUNC_ADD);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, paper_tex);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, normal_map_tex);
-
-	glUseProgram(surface_program->program);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-}
-
-void GameMode::draw_stylization(GLuint color_tex, GLuint control_tex,
-                            GLuint surface_tex, GLuint blurred_tex,
-                            GLuint bleeded_tex, GLuint* final_tex_){
-    assert(final_tex_);
-    auto &final_tex = *final_tex_;
-
-    static GLuint fb = 0;
-    if(fb==0) glGenFramebuffers(1, &fb);
-    glBindFramebuffer(GL_FRAMEBUFFER, fb);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                            final_tex, 0);
-
-    GLenum bufs[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, bufs);
-    check_fb();
-
-    //set glViewport
-	glBindFramebuffer(GL_FRAMEBUFFER, fb);
-	glViewport(0,0, textures.size.x, textures.size.y);
-	camera->aspect = textures.size.x / float(textures.size.y);
-
-    GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    glClearBufferfv(GL_COLOR, 0, black);
-
-	//set up basic OpenGL state:
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendEquation(GL_FUNC_ADD);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, color_tex);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, control_tex);
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, blurred_tex);
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, bleeded_tex);
-    glActiveTexture(GL_TEXTURE4);
-    glBindTexture(GL_TEXTURE_2D, surface_tex);
-
-	glUseProgram(stylize_program->program);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 void GameMode::draw(glm::uvec2 const &drawable_size) {
 	textures.allocate(drawable_size);
 
-    draw_scene(&textures.color_tex, &textures.control_tex, &textures.depth_tex);
-    draw_mrt_blur(textures.color_tex, textures.control_tex, textures.depth_tex,
-                            &textures.temp_tex1, &textures.temp_tex2, &textures.temp_tex3,
-                            &textures.blurred_tex, &textures.bleeded_tex);
-    draw_surface(*paper_tex, *normal_map_tex, &textures.surface_tex);
-    draw_stylization(textures.color_tex, textures.control_tex,
-            textures.surface_tex, textures.blurred_tex, textures.bleeded_tex,
-            &textures.final_tex);
+    draw_scene(&textures.color_tex, &textures.depth_tex);
     glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glActiveTexture(GL_TEXTURE0);
@@ -627,18 +332,7 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 
 	//Copy scene from color buffer to screen, performing post-processing effects:
 	glActiveTexture(GL_TEXTURE0);
-    if(show == FINAL)
-    	glBindTexture(GL_TEXTURE_2D, textures.final_tex);
-    else if(show == CONTROL_COLORS)
-        glBindTexture(GL_TEXTURE_2D, textures.control_tex);
-    else if(show == GAUSSIAN_BLUR)
-        glBindTexture(GL_TEXTURE_2D, textures.blurred_tex);
-    else if(show == BILATERAL_BLUR)
-        glBindTexture(GL_TEXTURE_2D, textures.bleeded_tex);
-    else if(show == SURFACE)
-        glBindTexture(GL_TEXTURE_2D, textures.surface_tex);
-    else
-        glBindTexture(GL_TEXTURE_2D, textures.color_tex);
+    glBindTexture(GL_TEXTURE_2D, textures.color_tex);
 
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
