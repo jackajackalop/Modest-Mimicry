@@ -236,7 +236,7 @@ GLuint MeshBuffer::make_vao_for_program(GLuint program) const {
 		name[99] = '\0';
 		GLint location = glGetAttribLocation(program, name);
 		if (!bound.count(GLuint(location))) {
-			throw std::runtime_error("ERROR: active attribute '" + std::string(name) + "' in program is not bound.");
+			throw std::runtime_error("ERROR: active attribute '" + std::string(name) +"' in program is not bound.");
 		}
 	}
 

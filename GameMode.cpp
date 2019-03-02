@@ -316,6 +316,7 @@ void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_){
     glUniform3fv(scene_program->viewPos, 1,
             glm::value_ptr(camera->transform->make_local_to_world()));
     scene->draw(camera);
+
 }
 
 void GameMode::draw(glm::uvec2 const &drawable_size) {
