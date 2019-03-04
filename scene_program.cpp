@@ -23,9 +23,9 @@ SceneProgram::SceneProgram() {
 		"#version 330\n"
         "uniform sampler2D tex;\n"
         "uniform int primitives[10];\n"
-        "uniform int positionsX[10];\n"
-        "uniform int positionsY[10];\n"
-        "uniform int positionsZ[10];\n"
+        "uniform float positionsX[10];\n"
+        "uniform float positionsY[10];\n"
+        "uniform float positionsZ[10];\n"
 		"in vec3 position;\n"
         "layout(location=0) out vec4 color_out;\n"
 
@@ -91,14 +91,15 @@ SceneProgram::SceneProgram() {
    	    "   res = opU(res,vec2(sdCylinder(pos-vec3(0.0,0.30,-2.0),vec2(0.1,0.2) ),8.0));\n"*/
         "   for(int i = 0; i<10; i++){ \n"
         "       if(primitives[i]>0){ \n"
+        "           vec3 position = vec3(positionsX[i], positionsY[i], positionsZ[i]); \n"
         "           if(primitives[i]==1) \n"
-	    "               res = opU(res,vec2(sdSphere(pos-vec3(0.0,0.25,0.0),0.25),46.9));\n"
+	    "               res = opU(res,vec2(sdSphere(pos-vec3(position),0.25),46.9));\n"
         "           else if(primitives[i]==2) \n"
-        "               res = opU(res,vec2(sdBox(pos-vec3(0.0,0.25,2.0),vec3(0.25)),3.0));\n"
+        "               res = opU(res,vec2(sdBox(pos-vec3(position),vec3(0.25)),3.0));\n"
         "           else if(primitives[i]==3) \n"
-	    "               res = opU(res,vec2(sdCone(pos-vec3(0.0,0.50,-1.0),vec3(0.8,0.6,0.3) ),55.0)); \n"
+	    "               res = opU(res,vec2(sdCone(pos-position,vec3(0.8,0.6,0.3) ),55.0)); \n"
         "           else if(primitives[i]==4) \n"
-   	    "               res = opU(res,vec2(sdCylinder(pos-vec3(0.0,0.30,-2.0),vec2(0.1,0.2) ),8.0));\n"
+   	    "               res = opU(res,vec2(sdCylinder(pos-position,vec2(0.1,0.2) ),8.0));\n"
         "       } \n"
         "   } \n"
         "   return res; \n"
@@ -121,7 +122,7 @@ SceneProgram::SceneProgram() {
         "   float tmin = 1.0; \n"
         "   float tmax = 20.0; \n"
         // raymarch primitives
-        "   vec2 tb = iBox( ro-vec3(0.0,0.4,0.0), rd, vec3(2.5,0.41,2.5) ); \n"
+        "   vec2 tb = iBox( ro-vec3(0.0,0.4,0.0), rd, vec3(3,1,3) ); \n"
         "   if( tb.x<tb.y && tb.y>0.0 && tb.x<tmax){ \n"
         "       tmin = max(tb.x,tmin); \n"
         "       tmax = min(tb.y,tmax); \n"
@@ -244,8 +245,8 @@ SceneProgram::SceneProgram() {
         "   mat3 ca = setCamera( ro, ta, 0.0 ); \n"
 
         "   vec3 tot = vec3(0.0);\n"
-        "   vec2 resolution = textureSize(tex, 0); \n"
-        "   vec2 p = (-resolution.xy + 2.0*gl_FragCoord.xy)/resolution.y; \n"
+        "   vec2 resolution = textureSize(tex, 0)*2.0; \n"
+        "   vec2 p = (-resolution + 2.0*gl_FragCoord.xy)/resolution.y; \n"
          // ray direction
         "   vec3 rd = ca * normalize( vec3(p.xy,2.0) ); \n"
         // render

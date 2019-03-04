@@ -219,6 +219,7 @@ void GameMode::add_primitive(int primitive_type){
    Primitive new_prim;
    new_prim.shape = primitive_type;
    primitives.emplace_back(new_prim);
+   std::cout<<"added"<<std::endl;
 }
 
 bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -227,7 +228,7 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		return false;
 	}
 
-    if (evt.type == SDL_KEYDOWN|| evt.type == SDL_KEYUP) {
+    if (evt.type == SDL_KEYDOWN) {
         if (evt.key.keysym.scancode == SDL_SCANCODE_1) {
             add_primitive(1); //sphere
         }else if (evt.key.keysym.scancode == SDL_SCANCODE_2) {
@@ -236,8 +237,25 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
             add_primitive(3); //sphere
         }else if (evt.key.keysym.scancode == SDL_SCANCODE_4) {
             add_primitive(4); //sphere
+        }else if(evt.key.keysym.scancode == SDL_SCANCODE_A){
+            primitives[0].position.z+=0.1;
+        }else if(evt.key.keysym.scancode == SDL_SCANCODE_D){
+            primitives[0].position.z-=0.1;
+        }else if(evt.key.keysym.scancode == SDL_SCANCODE_W){
+            primitives[0].position.y+=0.1;
+        }else if(evt.key.keysym.scancode == SDL_SCANCODE_S){
+            primitives[0].position.y-=0.1;
+        }else if(evt.key.keysym.scancode == SDL_SCANCODE_Q){
+            primitives[0].position.x+=0.1;
+        }else if(evt.key.keysym.scancode == SDL_SCANCODE_E){
+            primitives[0].position.x-=0.1;
         }
+
     }
+
+    if (evt.type == SDL_MOUSEBUTTONDOWN) {
+
+	}
 	return false;
 }
 
@@ -329,9 +347,9 @@ void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_){
 void GameMode::set_prim_uniforms(){
     int n = primitives.size();
     int prim10[10];
-    int posX10[10];
-    int posY10[10];
-    int posZ10[10];
+    float posX10[10];
+    float posY10[10];
+    float posZ10[10];
     for(int i = 0; i<10; i++){
         if(i<n){
             prim10[i] = primitives[i].shape;
@@ -346,9 +364,9 @@ void GameMode::set_prim_uniforms(){
         }
     }
     glUniform1iv(scene_program->primitives, 10, prim10);
-    glUniform1iv(scene_program->positionsX, 10, posX10);
-    glUniform1iv(scene_program->positionsY, 10, posY10);
-    glUniform1iv(scene_program->positionsZ, 10, posZ10);
+    glUniform1fv(scene_program->positionsX, 10, posX10);
+    glUniform1fv(scene_program->positionsY, 10, posY10);
+    glUniform1fv(scene_program->positionsZ, 10, posZ10);
 }
 
 void GameMode::draw(glm::uvec2 const &drawable_size) {

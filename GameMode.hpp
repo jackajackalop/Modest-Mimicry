@@ -37,7 +37,8 @@ struct GameMode : public Mode {
 	float spot_spin = 0.0f;
     class Primitive{
         public:
-            glm::vec3 position = glm::vec3(0, 0, 0);
+            glm::vec3 position = glm::vec3(2.0,0.5,0.25);
+;
             int shape = 0;
     };
     std::vector<Primitive> primitives;
