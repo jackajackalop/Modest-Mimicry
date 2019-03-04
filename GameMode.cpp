@@ -225,9 +225,6 @@ void GameMode::add_primitive(int primitive_type){
 
 bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
 	//ignore any keys that are the result of automatic key repeat:
-	if (evt.type == SDL_KEYDOWN && evt.key.repeat) {
-		return false;
-	}
 
     if (evt.type == SDL_KEYDOWN) {
         if (evt.key.keysym.scancode == SDL_SCANCODE_T){
@@ -236,6 +233,14 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
             edit_mode = 1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_Y){
             edit_mode = 2;
+        }
+
+        if (evt.key.keysym.scancode == SDL_SCANCODE_LEFT){
+            selected = selected-1;
+            if(selected<0) selected = primitives.size()-1;
+        }else if(evt.key.keysym.scancode == SDL_SCANCODE_RIGHT){
+            selected = selected+1;
+            if(selected>=int(primitives.size())) selected = 0;
         }
 
         if (evt.key.keysym.scancode == SDL_SCANCODE_1) {
@@ -249,29 +254,29 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
         }
 
         if(evt.key.keysym.scancode == SDL_SCANCODE_A){
-            if(edit_mode==0) primitives[0].position.z+=0.1;
-            else if(edit_mode==1) primitives[0].rotation.y -= 0.1;
-            else if(edit_mode==2) primitives[0].scale -= 0.1;
+            if(edit_mode==0) primitives[selected].position.z+=0.1;
+            else if(edit_mode==1) primitives[selected].rotation.y -= 0.1;
+            else if(edit_mode==2) primitives[selected].scale -= 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_D){
-            if(edit_mode==0) primitives[0].position.z-=0.1;
-            else if(edit_mode==1) primitives[0].rotation.y += 0.1;
-            else if(edit_mode==2) primitives[0].scale += 0.1;
+            if(edit_mode==0) primitives[selected].position.z-=0.1;
+            else if(edit_mode==1) primitives[selected].rotation.y += 0.1;
+            else if(edit_mode==2) primitives[selected].scale += 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_W){
-            if(edit_mode==0) primitives[0].position.y+=0.1;
-            else if(edit_mode==1) primitives[0].rotation.z += 0.1;
-            else if(edit_mode==2) primitives[0].scale += 0.1;
+            if(edit_mode==0) primitives[selected].position.y+=0.1;
+            else if(edit_mode==1) primitives[selected].rotation.z += 0.1;
+            else if(edit_mode==2) primitives[selected].scale += 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_S){
-            if(edit_mode==0) primitives[0].position.y-=0.1;
-            else if(edit_mode==1) primitives[0].rotation.z -= 0.1;
-            else if(edit_mode==2) primitives[0].scale -= 0.1;
+            if(edit_mode==0) primitives[selected].position.y-=0.1;
+            else if(edit_mode==1) primitives[selected].rotation.z -= 0.1;
+            else if(edit_mode==2) primitives[selected].scale -= 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_Q){
-            if(edit_mode==0) primitives[0].position.x-=0.1;
-            else if(edit_mode==1) primitives[0].rotation.x += 0.1;
-            else if(edit_mode==2) primitives[0].scale -= 0.1;
+            if(edit_mode==0) primitives[selected].position.x-=0.1;
+            else if(edit_mode==1) primitives[selected].rotation.x += 0.1;
+            else if(edit_mode==2) primitives[selected].scale -= 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_E){
-            if(edit_mode==0) primitives[0].position.x+=0.1;
-            else if(edit_mode==1) primitives[0].rotation.x -= 0.1;
-            else if(edit_mode==2) primitives[0].scale += 0.1;
+            if(edit_mode==0) primitives[selected].position.x+=0.1;
+            else if(edit_mode==1) primitives[selected].rotation.x -= 0.1;
+            else if(edit_mode==2) primitives[selected].scale += 0.1;
         }
 
     }
@@ -406,6 +411,7 @@ void GameMode::set_prim_uniforms(){
     glUniform1fv(scene_program->rotationsY, 10, rotY10);
     glUniform1fv(scene_program->rotationsZ, 10, rotZ10);
     glUniform1fv(scene_program->scales, 10, scale10);
+    glUniform1i(scene_program->selected, selected);
 }
 
 void GameMode::draw(glm::uvec2 const &drawable_size) {

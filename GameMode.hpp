@@ -37,10 +37,12 @@ struct GameMode : public Mode {
 	float spot_spin = 0.0f;
     class Primitive{
         public:
-            glm::vec3 position = glm::vec3(2.0,0.5,0.25);
+            glm::vec3 position = glm::vec3(0.0, 0.0, 0.0);//2.0,0.5,0.25);
             glm::vec3 rotation = glm::vec3(0.0,0.0,0.0); //euler angle values
             float scale = 1.0f;
             int shape = 0;
     };
+
+    int selected = 0;
     std::vector<Primitive> primitives;
 };

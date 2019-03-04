@@ -32,6 +32,7 @@ SceneProgram::SceneProgram() {
         "uniform float rotationsY[10];\n"
         "uniform float rotationsZ[10];\n"
         "uniform float scales[10]; \n"
+        "uniform int selected;"
 		"in vec3 position;\n"
         "in float Time; \n"
         "layout(location=0) out vec4 color_out;\n"
@@ -76,6 +77,7 @@ SceneProgram::SceneProgram() {
         "   return length(max(vec2(d1,d2),0.0)) + min(max(d1,d2), 0.); \n"
         "} \n"
 //------------------------------------------------------------------
+        //Rotation matrices are from https://www.shadertoy.com/view/4tcGDr
         //Rotation matrix around the X axis.
         "mat3 rotateX(float theta) { \n"
         "   float c = cos(theta); \n"
@@ -141,14 +143,15 @@ SceneProgram::SceneProgram() {
         "           vec3 position = vec3(positionsX[i], positionsY[i], positionsZ[i]); \n"
         "           vec3 p = position+rotateX(rotationsX[i])*rotateY(rotationsY[i])*rotateZ(rotationsZ[i])*(pos-position);\n"
         "           float scale = scales[i]; \n"
+        "           float color = (i==selected ? 100.0 : 2.0); \n"
         "           if(primitives[i]==1) \n"
-	    "               res = opSU(res,vec2(sdSphere(pos-position,0.25*scale),46.9));\n"
+	    "               res = opSU(res,vec2(sdSphere(pos-position,0.25*scale),color));\n"
         "           else if(primitives[i]==2) \n"
-        "               res = opSU(res,vec2(sdBox(p-position,vec3(0.25*scale)),3.0));\n"
+        "               res = opSU(res,vec2(sdBox(p-position,vec3(0.25*scale)),color));\n"
         "           else if(primitives[i]==3) \n"
-	    "               res = opSU(res,vec2(sdCone(pos-position,vec3(0.8,0.6,0.3)*scale),55.0)); \n"
+	    "               res = opSU(res,vec2(sdCone(pos-position,vec3(0.8,0.6,0.3)*scale),color)); \n"
         "           else if(primitives[i]==4) \n"
-   	    "               res = opSU(res,vec2(sdCylinder(pos-position,vec2(0.1,0.2)*scale ),8.0));\n"
+   	    "               res = opSU(res,vec2(sdCylinder(pos-position,vec2(0.1,0.2)*scale ),color));\n"
         "       } \n"
         "   } \n"
         "   return res; \n"
@@ -287,14 +290,20 @@ SceneProgram::SceneProgram() {
         "   return mat3( cu, cv, cw ); \n"
         "} \n"
 
+        "vec3 rayDirection(float fieldOfView, vec2 size) { \n"
+        "   vec2 xy = gl_FragCoord.xy - size / 2.0; \n"
+        "   float z = size.y / tan(radians(fieldOfView) / 2.0); \n"
+        "   return normalize(vec3(xy, -z)); \n"
+        "}"
+
 		"void main() {\n"
-        "   vec3 ro = vec3( 4.6, 1.0, 0.0 ); \n"
-        "   vec3 ta = vec3( 0.0, 1.0, 2.0 ); \n"
+        "   vec2 resolution = textureSize(tex, 0)*2.0; \n"
+        "   vec3 ro = vec3( 3.0, 0.25, 0.0); \n"
+        "   vec3 ta = vec3( -1.0, 0.0, 0.0);\n"
         // camera-to-world transformation
         "   mat3 ca = setCamera( ro, ta, 0.0 ); \n"
 
         "   vec3 tot = vec3(0.0);\n"
-        "   vec2 resolution = textureSize(tex, 0)*2.0; \n"
         "   vec2 p = (-resolution + 2.0*gl_FragCoord.xy)/resolution.y; \n"
          // ray direction
         "   vec3 rd = ca * normalize( vec3(p.xy,2.0) ); \n"
@@ -321,6 +330,7 @@ SceneProgram::SceneProgram() {
 	rotationsY = glGetUniformLocation(program, "rotationsY");
 	rotationsZ = glGetUniformLocation(program, "rotationsZ");
     scales = glGetUniformLocation(program, "scales");
+    selected = glGetUniformLocation(program, "selected");
 
 	glUseProgram(program);
 
