@@ -14,10 +14,12 @@ SceneProgram::SceneProgram() {
 		"layout(location=0) in vec4 Position;\n"
         //note: layout keyword used to make sure that the location-0 attribute is always bound to something
 		"out vec3 position;\n"
+        "out float Time; \n"
 		"void main() {\n"
 		"	position = object_to_light * Position;\n"
 		"	gl_Position = Position;\n"
         "   vec3 viewDir = normalize(viewPos-position);\n"
+        "   Time = time; \n"
 		"}\n"
 		,
 		"#version 330\n"
@@ -26,8 +28,12 @@ SceneProgram::SceneProgram() {
         "uniform float positionsX[10];\n"
         "uniform float positionsY[10];\n"
         "uniform float positionsZ[10];\n"
+        "uniform float rotationsX[10];\n"
+        "uniform float rotationsY[10];\n"
+        "uniform float rotationsZ[10];\n"
         "uniform float scales[10]; \n"
 		"in vec3 position;\n"
+        "in float Time; \n"
         "layout(location=0) out vec4 color_out;\n"
 
         "float sdSphere( vec3 p, float s ){\n"
@@ -70,6 +76,35 @@ SceneProgram::SceneProgram() {
         "   return length(max(vec2(d1,d2),0.0)) + min(max(d1,d2), 0.); \n"
         "} \n"
 //------------------------------------------------------------------
+        //Rotation matrix around the X axis.
+        "mat3 rotateX(float theta) { \n"
+        "   float c = cos(theta); \n"
+        "   float s = sin(theta); \n"
+        "   return mat3( "
+        "           vec3(1, 0, 0), "
+        "           vec3(0, c, -s), "
+        "           vec3(0, s, c)); \n "
+        "} \n"
+
+        //Rotation matrix around the Y axis.
+        "mat3 rotateY(float theta) { \n"
+        "   float c = cos(theta); \n"
+        "   float s = sin(theta); \n"
+        "   return mat3( "
+        "           vec3(c, 0, s), "
+        "           vec3(0, 1, 0), "
+        "           vec3(-s, 0, c)); \n "
+        "} \n"
+
+        //Rotation matrix around the Z axis.
+        "mat3 rotateZ(float theta) { \n"
+        "   float c = cos(theta); \n"
+        "   float s = sin(theta); \n"
+        "   return mat3( "
+        "           vec3(c, -s, 0), "
+        "           vec3(s, c, 0), "
+        "           vec3(0, 0, 1)); \n "
+        "} \n"
 
         "float opS( float d1, float d2 ){ \n"
         "   return max(-d2,d1); \n"
@@ -86,6 +121,10 @@ SceneProgram::SceneProgram() {
         "               (d1.x<d2.x) ? d1.y : d2.y); \n"
         "} \n"
 
+        /*"vec3 opTx( in vec3 p, in transform t, in sdf3d primitive ){ \n"
+        "   return primitive( invert(t)*p ); \n"
+        "} \n"
+*/
         "#define ZERO 0 \n"
 
 //------------------------------------------------------------------
@@ -100,11 +139,12 @@ SceneProgram::SceneProgram() {
         "   for(int i = 0; i<10; i++){ \n"
         "       if(primitives[i]>0){ \n"
         "           vec3 position = vec3(positionsX[i], positionsY[i], positionsZ[i]); \n"
+        "           vec3 p = position+rotateX(rotationsX[i])*rotateY(rotationsY[i])*rotateZ(rotationsZ[i])*(pos-position);\n"
         "           float scale = scales[i]; \n"
         "           if(primitives[i]==1) \n"
-	    "               res = opSU(res,vec2(sdSphere(pos-vec3(position),0.25*scale),46.9));\n"
+	    "               res = opSU(res,vec2(sdSphere(pos-position,0.25*scale),46.9));\n"
         "           else if(primitives[i]==2) \n"
-        "               res = opSU(res,vec2(sdBox(pos-vec3(position),vec3(0.25*scale)),3.0));\n"
+        "               res = opSU(res,vec2(sdBox(p-position,vec3(0.25*scale)),3.0));\n"
         "           else if(primitives[i]==3) \n"
 	    "               res = opSU(res,vec2(sdCone(pos-position,vec3(0.8,0.6,0.3)*scale),55.0)); \n"
         "           else if(primitives[i]==4) \n"
@@ -277,6 +317,9 @@ SceneProgram::SceneProgram() {
 	positionsX = glGetUniformLocation(program, "positionsX");
 	positionsY = glGetUniformLocation(program, "positionsY");
 	positionsZ = glGetUniformLocation(program, "positionsZ");
+	rotationsX = glGetUniformLocation(program, "rotationsX");
+	rotationsY = glGetUniformLocation(program, "rotationsY");
+	rotationsZ = glGetUniformLocation(program, "rotationsZ");
     scales = glGetUniformLocation(program, "scales");
 
 	glUseProgram(program);

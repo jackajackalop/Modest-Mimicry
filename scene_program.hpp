@@ -18,6 +18,9 @@ struct SceneProgram {
     GLuint positionsX = -1U;
     GLuint positionsY = -1U;
     GLuint positionsZ = -1U;
+    GLuint rotationsX = -1U;
+    GLuint rotationsY = -1U;
+    GLuint rotationsZ = -1U;
     GLuint scales = -1U;
 	//textures:
 	//texture0 - texture for the surface

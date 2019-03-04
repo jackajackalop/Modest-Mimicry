@@ -250,21 +250,27 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
         if(evt.key.keysym.scancode == SDL_SCANCODE_A){
             if(edit_mode==0) primitives[0].position.z+=0.1;
+            else if(edit_mode==1) primitives[0].rotation.y -= 0.1;
             else if(edit_mode==2) primitives[0].scale -= 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_D){
             if(edit_mode==0) primitives[0].position.z-=0.1;
+            else if(edit_mode==1) primitives[0].rotation.y += 0.1;
             else if(edit_mode==2) primitives[0].scale += 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_W){
             if(edit_mode==0) primitives[0].position.y+=0.1;
+            else if(edit_mode==1) primitives[0].rotation.z += 0.1;
             else if(edit_mode==2) primitives[0].scale += 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_S){
             if(edit_mode==0) primitives[0].position.y-=0.1;
+            else if(edit_mode==1) primitives[0].rotation.z -= 0.1;
             else if(edit_mode==2) primitives[0].scale -= 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_Q){
             if(edit_mode==0) primitives[0].position.x-=0.1;
+            else if(edit_mode==1) primitives[0].rotation.x += 0.1;
             else if(edit_mode==2) primitives[0].scale -= 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_E){
             if(edit_mode==0) primitives[0].position.x+=0.1;
+            else if(edit_mode==1) primitives[0].rotation.x -= 0.1;
             else if(edit_mode==2) primitives[0].scale += 0.1;
         }
 
@@ -367,6 +373,9 @@ void GameMode::set_prim_uniforms(){
     float posX10[10];
     float posY10[10];
     float posZ10[10];
+    float rotX10[10];
+    float rotY10[10];
+    float rotZ10[10];
     float scale10[10];
     for(int i = 0; i<10; i++){
         if(i<n){
@@ -374,6 +383,9 @@ void GameMode::set_prim_uniforms(){
             posX10[i] = primitives[i].position.x;
             posY10[i] = primitives[i].position.y;
             posZ10[i] = primitives[i].position.z;
+            rotX10[i] = primitives[i].rotation.x;
+            rotY10[i] = primitives[i].rotation.y;
+            rotZ10[i] = primitives[i].rotation.z;
             scale10[i] = primitives[i].scale;
         }else{
             prim10[i] = 0;
@@ -381,12 +393,18 @@ void GameMode::set_prim_uniforms(){
             posY10[i] = 0;
             posZ10[i] = 0;
             scale10[i] = 1;
+            rotX10[i] = 0;
+            rotY10[i] = 0;
+            rotZ10[i] = 0;
         }
     }
     glUniform1iv(scene_program->primitives, 10, prim10);
     glUniform1fv(scene_program->positionsX, 10, posX10);
     glUniform1fv(scene_program->positionsY, 10, posY10);
     glUniform1fv(scene_program->positionsZ, 10, posZ10);
+    glUniform1fv(scene_program->rotationsX, 10, rotX10);
+    glUniform1fv(scene_program->rotationsY, 10, rotY10);
+    glUniform1fv(scene_program->rotationsZ, 10, rotZ10);
     glUniform1fv(scene_program->scales, 10, scale10);
 }
 
