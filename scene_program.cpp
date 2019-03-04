@@ -78,6 +78,13 @@ SceneProgram::SceneProgram() {
 	    "   return (d1.x<d2.x) ? d1 : d2; \n"
         "} \n"
 
+        "vec2 opSU( vec2 d1, vec2 d2){ \n"
+        "   float k = 0.3f; \n"
+        "   float h = clamp( 0.5 + 0.5*(d2.x-d1.x)/k, 0.0, 1.0 ); \n"
+        "   return vec2(mix( d2.x, d1.x, h ) - k*h*(1.0-h), "
+        "               (d1.x<d2.x) ? d1.y : d2.y); \n"
+        "} \n"
+
         "#define ZERO 0 \n"
 
 //------------------------------------------------------------------
@@ -93,13 +100,13 @@ SceneProgram::SceneProgram() {
         "       if(primitives[i]>0){ \n"
         "           vec3 position = vec3(positionsX[i], positionsY[i], positionsZ[i]); \n"
         "           if(primitives[i]==1) \n"
-	    "               res = opU(res,vec2(sdSphere(pos-vec3(position),0.25),46.9));\n"
+	    "               res = opSU(res,vec2(sdSphere(pos-vec3(position),0.25),46.9));\n"
         "           else if(primitives[i]==2) \n"
-        "               res = opU(res,vec2(sdBox(pos-vec3(position),vec3(0.25)),3.0));\n"
+        "               res = opSU(res,vec2(sdBox(pos-vec3(position),vec3(0.25)),3.0));\n"
         "           else if(primitives[i]==3) \n"
-	    "               res = opU(res,vec2(sdCone(pos-position,vec3(0.8,0.6,0.3) ),55.0)); \n"
+	    "               res = opSU(res,vec2(sdCone(pos-position,vec3(0.8,0.6,0.3) ),55.0)); \n"
         "           else if(primitives[i]==4) \n"
-   	    "               res = opU(res,vec2(sdCylinder(pos-position,vec2(0.1,0.2) ),8.0));\n"
+   	    "               res = opSU(res,vec2(sdCylinder(pos-position,vec2(0.1,0.2) ),8.0));\n"
         "       } \n"
         "   } \n"
         "   return res; \n"
