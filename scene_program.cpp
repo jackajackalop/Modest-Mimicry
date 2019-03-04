@@ -22,6 +22,10 @@ SceneProgram::SceneProgram() {
 		,
 		"#version 330\n"
         "uniform sampler2D tex;\n"
+        "uniform int primitives[10];\n"
+        "uniform int positionsX[10];\n"
+        "uniform int positionsY[10];\n"
+        "uniform int positionsZ[10];\n"
 		"in vec3 position;\n"
         "layout(location=0) out vec4 color_out;\n"
 
@@ -80,11 +84,23 @@ SceneProgram::SceneProgram() {
 
         "vec2 map( in vec3 pos ){ \n"
         "   vec2 res = vec2( 1e10, 0.0 ); \n"
-	    "   res = opU(res,vec2(sdSphere(pos-vec3(0.0,0.25,0.0),0.25),46.9));\n"
+	   /* "   res = opU(res,vec2(sdSphere(pos-vec3(0.0,0.25,0.0),0.25),46.9));\n"
         "   res = opU(res,vec2(sdTorus(pos-vec3(0.0,0.25,1.0),vec2(0.20,0.05)),25.0)); \n"
 	    "   res = opU(res,vec2(sdCone(pos-vec3(0.0,0.50,-1.0),vec3(0.8,0.6,0.3) ),55.0)); \n"
         "   res = opU(res,vec2(sdBox(pos-vec3(0.0,0.25,2.0),vec3(0.25)),3.0));\n"
-   	    "   res = opU(res,vec2(sdCylinder(pos-vec3(0.0,0.30,-2.0),vec2(0.1,0.2) ),8.0));\n"
+   	    "   res = opU(res,vec2(sdCylinder(pos-vec3(0.0,0.30,-2.0),vec2(0.1,0.2) ),8.0));\n"*/
+        "   for(int i = 0; i<10; i++){ \n"
+        "       if(primitives[i]>0){ \n"
+        "           if(primitives[i]==1) \n"
+	    "               res = opU(res,vec2(sdSphere(pos-vec3(0.0,0.25,0.0),0.25),46.9));\n"
+        "           else if(primitives[i]==2) \n"
+        "               res = opU(res,vec2(sdBox(pos-vec3(0.0,0.25,2.0),vec3(0.25)),3.0));\n"
+        "           else if(primitives[i]==3) \n"
+	    "               res = opU(res,vec2(sdCone(pos-vec3(0.0,0.50,-1.0),vec3(0.8,0.6,0.3) ),55.0)); \n"
+        "           else if(primitives[i]==4) \n"
+   	    "               res = opU(res,vec2(sdCylinder(pos-vec3(0.0,0.30,-2.0),vec2(0.1,0.2) ),8.0));\n"
+        "       } \n"
+        "   } \n"
         "   return res; \n"
         "} \n"
 
@@ -246,6 +262,11 @@ SceneProgram::SceneProgram() {
 
 	time = glGetUniformLocation(program, "time");
 	viewPos = glGetUniformLocation(program, "viewPos");
+
+	primitives = glGetUniformLocation(program, "primitives");
+	positionsX = glGetUniformLocation(program, "positionsX");
+	positionsY = glGetUniformLocation(program, "positionsY");
+	positionsZ = glGetUniformLocation(program, "positionsZ");
 
 	glUseProgram(program);
 

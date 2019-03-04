@@ -215,24 +215,29 @@ GameMode::GameMode() {
 GameMode::~GameMode() {
 }
 
+void GameMode::add_primitive(int primitive_type){
+   Primitive new_prim;
+   new_prim.shape = primitive_type;
+   primitives.emplace_back(new_prim);
+}
+
 bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
 	//ignore any keys that are the result of automatic key repeat:
 	if (evt.type == SDL_KEYDOWN && evt.key.repeat) {
 		return false;
 	}
 
-	if (evt.type == SDL_MOUSEMOTION) {
-		if (evt.motion.state & SDL_BUTTON(SDL_BUTTON_LEFT)) {
-			camera_spin += 5.0f * evt.motion.xrel / float(window_size.x);
-			return true;
-		}
-		if (evt.motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
-			//spot_spin += 5.0f * evt.motion.xrel / float(window_size.x);
-			return true;
-		}
-
-	}
-
+    if (evt.type == SDL_KEYDOWN|| evt.type == SDL_KEYUP) {
+        if (evt.key.keysym.scancode == SDL_SCANCODE_1) {
+            add_primitive(1); //sphere
+        }else if (evt.key.keysym.scancode == SDL_SCANCODE_2) {
+            add_primitive(2); //sphere
+        }else if (evt.key.keysym.scancode == SDL_SCANCODE_3) {
+            add_primitive(3); //sphere
+        }else if (evt.key.keysym.scancode == SDL_SCANCODE_4) {
+            add_primitive(4); //sphere
+        }
+    }
 	return false;
 }
 
@@ -315,8 +320,35 @@ void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_){
     glUniform1f(scene_program->time, elapsed_time);
     glUniform3fv(scene_program->viewPos, 1,
             glm::value_ptr(camera->transform->make_local_to_world()));
+
+    set_prim_uniforms();
     scene->draw(camera);
 
+}
+
+void GameMode::set_prim_uniforms(){
+    int n = primitives.size();
+    int prim10[10];
+    int posX10[10];
+    int posY10[10];
+    int posZ10[10];
+    for(int i = 0; i<10; i++){
+        if(i<n){
+            prim10[i] = primitives[i].shape;
+            posX10[i] = primitives[i].position.x;
+            posY10[i] = primitives[i].position.y;
+            posZ10[i] = primitives[i].position.z;
+        }else{
+            prim10[i] = 0;
+            posX10[i] = 0;
+            posY10[i] = 0;
+            posZ10[i] = 0;
+        }
+    }
+    glUniform1iv(scene_program->primitives, 10, prim10);
+    glUniform1iv(scene_program->positionsX, 10, posX10);
+    glUniform1iv(scene_program->positionsY, 10, posY10);
+    glUniform1iv(scene_program->positionsZ, 10, posZ10);
 }
 
 void GameMode::draw(glm::uvec2 const &drawable_size) {
