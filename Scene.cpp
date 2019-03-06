@@ -234,13 +234,13 @@ void Scene::draw(glm::mat4 const &world_to_clip, Object::ProgramType program_typ
 		if (info.set_uniforms) info.set_uniforms();
 
 		//set up program textures:
-	/*	for (uint32_t i = 0; i < Object::ProgramInfo::TextureCount; ++i) {
+		for (uint32_t i = 0; i < Object::ProgramInfo::TextureCount; ++i) {
 			if (info.textures[i] != 0) {
 				glActiveTexture(GL_TEXTURE0 + i);
 				glBindTexture(GL_TEXTURE_2D, info.textures[i]);
 			}
-		}*/
-        glActiveTexture(GL_TEXTURE0);
+		}
+        glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, bg);
         //std::cout<<Object::ProgramInfo::TextureCount<<std::endl;
 		glBindVertexArray(info.vao);

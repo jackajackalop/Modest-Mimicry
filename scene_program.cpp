@@ -280,7 +280,7 @@ SceneProgram::SceneProgram() {
 
     	"       col = mix(col,vec3(0.8,0.9,1.0),1.0-exp(-0.0002*t*t*t));\n"
         "   } \n"
-        //"if(m==-1) col = vec3(1, 0, 0); \n"
+        "if(m==-1) col = vec3(0, 0, 0); \n"
 	    "return vec3( clamp(col,0.0,1.0) ); \n"
         "} \n"
 
@@ -316,8 +316,8 @@ SceneProgram::SceneProgram() {
         "   tot += col; \n"
 
         "   vec4 bg_color = texelFetch(bg_tex, ivec2(vec2(1.7, 2)*gl_FragCoord.xy), 0)\n;"
-        "   color_out = vec4( tot, 1.0 ); \n"
-       // "   color_out = bg_color;\n"
+        "   color_out = (tot!=vec3(0,0,0) ? vec4( tot, 1.0 ) : bg_color); \n"
+     //   "   color_out = bg_color;\n"
 		"}\n"
 	);
     object_to_clip_mat4 = glGetUniformLocation(program, "object_to_clip");
@@ -326,6 +326,7 @@ SceneProgram::SceneProgram() {
 
 	time = glGetUniformLocation(program, "time");
 	viewPos = glGetUniformLocation(program, "viewPos");
+
 
 	primitives = glGetUniformLocation(program, "primitives");
 	positionsX = glGetUniformLocation(program, "positionsX");
@@ -340,6 +341,7 @@ SceneProgram::SceneProgram() {
 	glUseProgram(program);
 
 	GLuint tex_sampler2D = glGetUniformLocation(program, "tex");
+    glUniform1i(glGetUniformLocation(program, "bg_tex"), 1);
 	glUniform1i(tex_sampler2D, 0);
 
 	glUseProgram(0);
