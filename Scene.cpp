@@ -175,14 +175,16 @@ Scene::Camera *Scene::new_camera(Scene::Transform *transform) {
 void Scene::delete_camera(Scene::Camera *object) {
 	list_delete< Scene::Camera >(object);
 }
+GLuint bg;
 
-void Scene::draw(Scene::Camera const *camera, Object::ProgramType program_type) const {
+void Scene::draw(Scene::Camera const *camera, GLuint bg_tex, Object::ProgramType program_type) const {
 	assert(camera && "Must have a camera to draw scene from.");
 	assert(program_type < Object::ProgramTypes);
 
 	glm::mat4 world_to_camera = camera->transform->make_world_to_local();
 	glm::mat4 world_to_clip = camera->make_projection() * world_to_camera;
 
+    bg = bg_tex;
 	draw(world_to_clip, program_type);
 }
 
@@ -232,13 +234,15 @@ void Scene::draw(glm::mat4 const &world_to_clip, Object::ProgramType program_typ
 		if (info.set_uniforms) info.set_uniforms();
 
 		//set up program textures:
-		for (uint32_t i = 0; i < Object::ProgramInfo::TextureCount; ++i) {
+	/*	for (uint32_t i = 0; i < Object::ProgramInfo::TextureCount; ++i) {
 			if (info.textures[i] != 0) {
 				glActiveTexture(GL_TEXTURE0 + i);
 				glBindTexture(GL_TEXTURE_2D, info.textures[i]);
 			}
-		}
-
+		}*/
+        glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, bg);
+        //std::cout<<Object::ProgramInfo::TextureCount<<std::endl;
 		glBindVertexArray(info.vao);
 
 		//draw the object:

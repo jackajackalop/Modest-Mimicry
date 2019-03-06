@@ -182,7 +182,7 @@ struct Scene {
 
 	//Draw the scene from a given camera by computing appropriate matrices and sending all objects to OpenGL:
 	//"camera" must be non-null!
-	void draw(Camera const *camera, Object::ProgramType = Object::ProgramTypeDefault ) const;
+	void draw(Camera const *camera, GLuint bg_tex, Object::ProgramType = Object::ProgramTypeDefault ) const;
 
 	//Draw the scene from a given lamp by computing appropriate matrices and sending all objects to OpenGL:
 	//"lamp" must be non-null!

@@ -103,13 +103,10 @@ Load< GLuint > marble_tex(LoadTagDefault, [](){
 	return new GLuint(load_texture(data_path("textures/marble.png")));
 });
 
-Load< GLuint > paper_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/marble.png")));
+Load< GLuint > bg_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/bg.png")));
 });
 
-Load< GLuint > normal_map_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/wood.png")));
-});
 
 Load< GLuint > white_tex(LoadTagDefault, [](){
 	GLuint tex = 0;
@@ -156,7 +153,7 @@ Load< Scene > scene(LoadTagDefault, [](){
 
 		obj->programs[Scene::Object::ProgramTypeDefault] = scene_program_info;
 		if (t->name == "Platform") {
-			obj->programs[Scene::Object::ProgramTypeDefault].textures[0] = *wood_tex;
+			obj->programs[Scene::Object::ProgramTypeDefault].textures[0] = *marble_tex;
 		} else if (t->name == "Pedestal") {
 			obj->programs[Scene::Object::ProgramTypeDefault].textures[0] = *marble_tex;
 		} else {
@@ -207,6 +204,7 @@ Load< Scene > scene(LoadTagDefault, [](){
 	}
 	if (!spot) throw std::runtime_error("No 'Spot' spotlight in scene.");
 */
+
 	return ret;
 });
 
@@ -368,8 +366,7 @@ void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_){
             glm::value_ptr(camera->transform->make_local_to_world()));
 
     set_prim_uniforms();
-    scene->draw(camera);
-
+    scene->draw(camera, *bg_tex);
 }
 
 void GameMode::set_prim_uniforms(){

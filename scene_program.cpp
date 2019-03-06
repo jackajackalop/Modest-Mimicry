@@ -24,6 +24,7 @@ SceneProgram::SceneProgram() {
 		,
 		"#version 330\n"
         "uniform sampler2D tex;\n"
+        "uniform sampler2D bg_tex;\n"
         "uniform int primitives[10];\n"
         "uniform float positionsX[10];\n"
         "uniform float positionsY[10];\n"
@@ -33,7 +34,7 @@ SceneProgram::SceneProgram() {
         "uniform float rotationsZ[10];\n"
         "uniform float scales[10]; \n"
         "uniform int selected;"
-		"in vec3 position;\n"
+//		"in vec3 position;\n"
         "in float Time; \n"
         "layout(location=0) out vec4 color_out;\n"
 
@@ -145,13 +146,13 @@ SceneProgram::SceneProgram() {
         "           float scale = scales[i]; \n"
         "           float color = (i==selected ? 100.0 : 2.0); \n"
         "           if(primitives[i]==1) \n"
-	    "               res = opSU(res,vec2(sdSphere(pos-position,0.25*scale),color));\n"
+	    "               res = opSU(res,vec2(sdSphere(p-position,0.25*scale),color));\n"
         "           else if(primitives[i]==2) \n"
         "               res = opSU(res,vec2(sdBox(p-position,vec3(0.25*scale)),color));\n"
         "           else if(primitives[i]==3) \n"
-	    "               res = opSU(res,vec2(sdCone(pos-position,vec3(0.8,0.6,0.3)*scale),color)); \n"
+	    "               res = opSU(res,vec2(sdCone(p-position,vec3(0.8,0.6,0.3)*scale),color)); \n"
         "           else if(primitives[i]==4) \n"
-   	    "               res = opSU(res,vec2(sdCylinder(pos-position,vec2(0.1,0.2)*scale ),color));\n"
+   	    "               res = opSU(res,vec2(sdCylinder(p-position,vec2(0.1,0.2)*scale ),color));\n"
         "       } \n"
         "   } \n"
         "   return res; \n"
@@ -279,6 +280,7 @@ SceneProgram::SceneProgram() {
 
     	"       col = mix(col,vec3(0.8,0.9,1.0),1.0-exp(-0.0002*t*t*t));\n"
         "   } \n"
+        //"if(m==-1) col = vec3(1, 0, 0); \n"
 	    "return vec3( clamp(col,0.0,1.0) ); \n"
         "} \n"
 
@@ -298,7 +300,7 @@ SceneProgram::SceneProgram() {
 
 		"void main() {\n"
         "   vec2 resolution = textureSize(tex, 0)*2.0; \n"
-        "   vec3 ro = vec3( 3.0, 0.25, 0.0); \n"
+        "   vec3 ro = vec3( 3.0, -.45, 0.0); \n"
         "   vec3 ta = vec3( -1.0, 0.0, 0.0);\n"
         // camera-to-world transformation
         "   mat3 ca = setCamera( ro, ta, 0.0 ); \n"
@@ -312,7 +314,10 @@ SceneProgram::SceneProgram() {
 		// gamma
         "   col = pow( col, vec3(0.4545) );\n"
         "   tot += col; \n"
+
+        "   vec4 bg_color = texelFetch(bg_tex, ivec2(vec2(1.7, 2)*gl_FragCoord.xy), 0)\n;"
         "   color_out = vec4( tot, 1.0 ); \n"
+       // "   color_out = bg_color;\n"
 		"}\n"
 	);
     object_to_clip_mat4 = glGetUniformLocation(program, "object_to_clip");
