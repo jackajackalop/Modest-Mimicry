@@ -243,7 +243,7 @@ void Scene::draw(glm::mat4 const &world_to_clip, Object::ProgramType program_typ
         glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, bg);
         //std::cout<<Object::ProgramInfo::TextureCount<<std::endl;
-		glBindVertexArray(info.vao);
+	    glBindVertexArray(info.vao);
 
 		//draw the object:
 		glDrawArrays(GL_TRIANGLES, info.start, info.count);
@@ -256,8 +256,25 @@ void Scene::draw(glm::mat4 const &world_to_clip, Object::ProgramType program_typ
 	}
 	glActiveTexture(GL_TEXTURE0);
 }
+void Scene::hatch() const{
 
+			//ProgramTypeDefault = 0,
+	for (Scene::Object *object = first_object; object != nullptr; object = object->alloc_next) {
 
+		//don't draw if no program of this type attached to object:
+		if (object->programs[0].program == 0) continue;
+
+		//set up program uniforms:
+		Object::ProgramInfo const &info = object->programs[0];
+
+        //std::cout<<Object::ProgramInfo::TextureCount<<std::endl;
+	    glBindVertexArray(info.vao);
+
+		//draw the object:
+		glDrawArrays(GL_TRIANGLES, info.start, info.count);
+    }
+
+}
 Scene::~Scene() {
 	while (first_camera) {
 		delete_camera(first_camera);

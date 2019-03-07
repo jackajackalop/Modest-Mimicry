@@ -13,6 +13,7 @@
 #include "load_save_png.hpp"
 #include "scene_program.hpp"
 #include "depth_program.hpp"
+#include "hatching_program.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -297,6 +298,7 @@ struct Textures {
 	glm::uvec2 size = glm::uvec2(0,0); //remember the size of the framebuffer
 
 	GLuint color_tex = 0;
+    GLuint hatched_tex = 0;
 	GLuint depth_tex = 0;
 	void allocate(glm::uvec2 const &new_size) {
     //allocate full-screen framebuffer:
@@ -317,6 +319,7 @@ struct Textures {
             };
 
             alloc_tex(&color_tex, GL_RGBA8, GL_RGBA);
+            alloc_tex(&hatched_tex, GL_RGBA8, GL_RGBA);
             alloc_tex(&depth_tex, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT);
 			GL_ERRORS();
 		}
@@ -369,6 +372,49 @@ void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_){
     scene->draw(camera, *bg_tex);
 }
 
+void GameMode::draw_hatching(GLuint color_tex, GLuint* hatched_tex_){
+    assert(hatched_tex_);
+    auto &hatched_tex = *hatched_tex_;
+
+    static GLuint fb = 0;
+    if(fb==0) glGenFramebuffers(1, &fb);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                            hatched_tex, 0);
+
+    GLenum bufs[1] = {GL_COLOR_ATTACHMENT0};
+    glDrawBuffers(1, bufs);
+    check_fb();
+
+    //set glViewport
+	glBindFramebuffer(GL_FRAMEBUFFER, fb);
+	glViewport(0,0, textures.size.x, textures.size.y);
+	camera->aspect = textures.size.x / float(textures.size.y);
+
+    GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    glClearBufferfv(GL_COLOR, 0, black);
+
+	//set up basic OpenGL state:
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, color_tex);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, *bg_tex);
+
+	glUseProgram(hatching_program->program);
+    scene->hatch();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+
 void GameMode::set_prim_uniforms(){
     int n = primitives.size();
     int prim10[10];
@@ -415,6 +461,7 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 	textures.allocate(drawable_size);
 
     draw_scene(&textures.color_tex, &textures.depth_tex);
+    draw_hatching(textures.color_tex, &textures.hatched_tex);
     glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glActiveTexture(GL_TEXTURE0);
@@ -425,7 +472,7 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 
 	//Copy scene from color buffer to screen, performing post-processing effects:
 	glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textures.color_tex);
+    glBindTexture(GL_TEXTURE_2D, textures.hatched_tex);
 
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);

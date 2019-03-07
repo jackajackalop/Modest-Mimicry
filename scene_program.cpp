@@ -316,8 +316,8 @@ SceneProgram::SceneProgram() {
         "   tot += col; \n"
 
         "   vec4 bg_color = texelFetch(bg_tex, ivec2(vec2(1.7, 2)*gl_FragCoord.xy), 0)\n;"
-        "   color_out = (tot!=vec3(0,0,0) ? vec4( tot, 1.0 ) : bg_color); \n"
-     //   "   color_out = bg_color;\n"
+        "   color_out = vec4(tot, 1.0);\n"
+        //"   color_out = (tot!=vec3(0,0,0) ? vec4( tot, 1.0 ) : bg_color); \n"
 		"}\n"
 	);
     object_to_clip_mat4 = glGetUniformLocation(program, "object_to_clip");

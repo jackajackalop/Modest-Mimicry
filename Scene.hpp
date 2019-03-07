@@ -193,6 +193,8 @@ struct Scene {
 		glm::mat4 const &world_to_clip,
 		Object::ProgramType program_type) const;
 
+    void hatch() const;
+
 	~Scene(); //destructor deallocates transforms, objects, cameras
 
 	//add transforms/objects/cameras from a scene file:

@@ -30,6 +30,7 @@ struct GameMode : public Mode {
 	//draw is called after update:
 	virtual void draw(glm::uvec2 const &drawable_size) override;
     void draw_scene(GLuint* color_tex, GLuint* depth_tex);
+    void draw_hatching(GLuint color_tex, GLuint* hatching_tex_);
     void add_primitive(int primitive_type);
     void set_prim_uniforms();
 
