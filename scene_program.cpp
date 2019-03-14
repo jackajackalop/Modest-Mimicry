@@ -248,7 +248,26 @@ SceneProgram::SceneProgram() {
         "   } \n"
         "   return clamp( 1.0 - 3.0*occ, 0.0, 1.0 ) * (0.5+0.5*nor.y); \n"
         "} \n"
+// http://www.iquilezles.org/www/articles/texture/texture.htm
 
+        "vec4 texcube( sampler2D sam, in vec3 p, in vec3 n, in float k, in vec3 g1, in vec3 g2 ){ \n"
+        "   vec3 m = pow( abs( n ), vec3(k) ); \n"
+        "   vec4 x = textureGrad( sam, p.yz, g1.yz, g2.yz ); \n"
+        "   vec4 y = textureGrad( sam, p.zx, g1.zx, g2.zx ); \n"
+        "   vec4 z = textureGrad( sam, p.xy, g1.xy, g2.xy ); \n"
+        "   return (x*m.x + y*m.y + z*m.z) / (m.x + m.y + m.z); \n"
+        "} \n"
+
+        "vec4 textureImproved(sampler2D tex, in vec2 res, in vec2 uv, in vec2 g1, in vec2 g2 ){ \n"
+        "   uv = uv*res + 0.5; \n"
+	    "   vec2 iuv = floor( uv ); \n"
+	    "   vec2 fuv = fract( uv ); \n"
+	    "   uv = iuv + fuv*fuv*(3.0-2.0*fuv); \n"
+	    "   uv = (uv - 0.5)/res; \n"
+	    "   return textureGrad( tex, uv, g1, g2 ); \n"
+        "} \n"
+
+        "vec3 og_pos; \n"
         "vec3 render( in vec3 ro, in vec3 rd ){ \n"
         "   vec3 col = vec3(0.7, 0.9, 1.0) +rd.y*0.8; \n"
         "   vec2 res = castRay(ro,rd); \n"
@@ -256,6 +275,7 @@ SceneProgram::SceneProgram() {
 	    "   float m = res.y; \n"
         "   if( m>-0.5 ){ \n"
         "       vec3 pos = ro + t*rd; \n"
+        "       og_pos = pos; \n"
         "       vec3 nor = (m<1.5) ? vec3(0.0,1.0,0.0) : calcNormal( pos ); \n"
         "       vec3 ref = reflect( rd, nor ); \n"
                 // material
@@ -309,16 +329,14 @@ SceneProgram::SceneProgram() {
 //http://hhoppe.com/hatching.pdf
 
         "vec4 shade(vec4 og){ \n"
-        "   vec2 og_pos = gl_FragCoord.xy; \n"
         "   vec2 tile = textureSize(hatch0_tex, 0);"
-        "   vec2 vUv = vec2(mod(og_pos.x, tile.x), mod(og_pos.y, tile.y)); \n"
-        "   vec4 hatch0 = texelFetch(hatch0_tex, ivec2(vUv), 0);\n"
-        "   vec4 hatch1 = texelFetch(hatch1_tex, ivec2(vUv), 0);\n"
-        "   vec4 hatch2 = texelFetch(hatch2_tex, ivec2(vUv), 0);\n"
-        "   vec4 hatch3 = texelFetch(hatch3_tex, ivec2(vUv), 0);\n"
-        "   vec4 hatch4 = texelFetch(hatch4_tex, ivec2(vUv), 0);\n"
-        "   vec4 hatch5 = texelFetch(hatch5_tex, ivec2(vUv), 0);\n"
-
+        "   vec2 uv = vec2(og_pos.y, og_pos.z)*1.7; \n"
+        "   vec4 hatch0 = texture(hatch0_tex, uv, 0);\n"
+        "   vec4 hatch1 = texture(hatch1_tex, uv, 0);\n"
+        "   vec4 hatch2 = texture(hatch2_tex, uv, 0);\n"
+        "   vec4 hatch3 = texture(hatch3_tex, uv, 0);\n"
+        "   vec4 hatch4 = texture(hatch4_tex, uv, 0);\n"
+        "   vec4 hatch5 = texture(hatch5_tex, uv, 0);\n"
         "   float ambientWeight = 0.08; \n"
         "   float diffuseWeight = 1.0; \n"
         "   float rimWeight = 0.46; \n"
