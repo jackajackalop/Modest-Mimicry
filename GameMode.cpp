@@ -95,7 +95,6 @@ GLuint load_texture(std::string const &filename) {
 
 	return tex;
 }
-
 Load< GLuint > wood_tex(LoadTagDefault, [](){
 	return new GLuint(load_texture(data_path("textures/grid.png")));
 });
@@ -103,11 +102,27 @@ Load< GLuint > wood_tex(LoadTagDefault, [](){
 Load< GLuint > marble_tex(LoadTagDefault, [](){
 	return new GLuint(load_texture(data_path("textures/marble.png")));
 });
-
 Load< GLuint > bg_tex(LoadTagDefault, [](){
 	return new GLuint(load_texture(data_path("textures/bg.png")));
 });
-
+Load< GLuint > hatch0_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/hatch_0.png")));
+});
+Load< GLuint > hatch1_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/hatch_1.png")));
+});
+Load< GLuint > hatch2_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/hatch_2.png")));
+});
+Load< GLuint > hatch3_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/hatch_3.png")));
+});
+Load< GLuint > hatch4_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/hatch_4.png")));
+});
+Load< GLuint > hatch5_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/hatch_5.png")));
+});
 
 Load< GLuint > white_tex(LoadTagDefault, [](){
 	GLuint tex = 0;
@@ -404,6 +419,18 @@ void GameMode::draw_hatching(GLuint color_tex, GLuint* hatched_tex_){
     glBindTexture(GL_TEXTURE_2D, color_tex);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, *bg_tex);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, *hatch0_tex);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, *hatch1_tex);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, *hatch2_tex);
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, *hatch3_tex);
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, *hatch4_tex);
+    glActiveTexture(GL_TEXTURE7);
+    glBindTexture(GL_TEXTURE_2D, *hatch5_tex);
 
 	glUseProgram(hatching_program->program);
     scene->hatch();
