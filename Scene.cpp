@@ -175,9 +175,11 @@ Scene::Camera *Scene::new_camera(Scene::Transform *transform) {
 void Scene::delete_camera(Scene::Camera *object) {
 	list_delete< Scene::Camera >(object);
 }
-GLuint bg;
+GLuint bg, hatch0, hatch1, hatch2, hatch3, hatch4, hatch5;
 
-void Scene::draw(Scene::Camera const *camera, GLuint bg_tex, Object::ProgramType program_type) const {
+void Scene::draw(Scene::Camera const *camera, GLuint bg_tex, GLuint hatch0_tex,
+        GLuint hatch1_tex, GLuint hatch2_tex, GLuint hatch3_tex,
+        GLuint hatch4_tex, GLuint hatch5_tex, Object::ProgramType program_type) const {
 	assert(camera && "Must have a camera to draw scene from.");
 	assert(program_type < Object::ProgramTypes);
 
@@ -185,6 +187,12 @@ void Scene::draw(Scene::Camera const *camera, GLuint bg_tex, Object::ProgramType
 	glm::mat4 world_to_clip = camera->make_projection() * world_to_camera;
 
     bg = bg_tex;
+    hatch0 = hatch0_tex;
+    hatch1 = hatch1_tex;
+    hatch2 = hatch2_tex;
+    hatch3 = hatch3_tex;
+    hatch4 = hatch4_tex;
+    hatch5 = hatch5_tex;
 	draw(world_to_clip, program_type);
 }
 
@@ -242,7 +250,19 @@ void Scene::draw(glm::mat4 const &world_to_clip, Object::ProgramType program_typ
 		}
         glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, bg);
-        //std::cout<<Object::ProgramInfo::TextureCount<<std::endl;
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, hatch0);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, hatch1);
+        glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_2D, hatch2);
+        glActiveTexture(GL_TEXTURE5);
+        glBindTexture(GL_TEXTURE_2D, hatch3);
+        glActiveTexture(GL_TEXTURE6);
+        glBindTexture(GL_TEXTURE_2D, hatch4);
+        glActiveTexture(GL_TEXTURE7);
+        glBindTexture(GL_TEXTURE_2D, hatch5);
+
 	    glBindVertexArray(info.vao);
 
 		//draw the object:
@@ -256,25 +276,7 @@ void Scene::draw(glm::mat4 const &world_to_clip, Object::ProgramType program_typ
 	}
 	glActiveTexture(GL_TEXTURE0);
 }
-void Scene::hatch() const{
 
-			//ProgramTypeDefault = 0,
-	for (Scene::Object *object = first_object; object != nullptr; object = object->alloc_next) {
-
-		//don't draw if no program of this type attached to object:
-		if (object->programs[0].program == 0) continue;
-
-		//set up program uniforms:
-		Object::ProgramInfo const &info = object->programs[0];
-
-        //std::cout<<Object::ProgramInfo::TextureCount<<std::endl;
-	    glBindVertexArray(info.vao);
-
-		//draw the object:
-		glDrawArrays(GL_TRIANGLES, info.start, info.count);
-    }
-
-}
 Scene::~Scene() {
 	while (first_camera) {
 		delete_camera(first_camera);

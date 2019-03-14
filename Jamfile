@@ -72,7 +72,6 @@ CLIENT_NAMES =
 	vertex_color_program
 	scene_program
 	depth_program
-    hatching_program
 	Scene
 	Mode
 	GameMode

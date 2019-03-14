@@ -182,7 +182,9 @@ struct Scene {
 
 	//Draw the scene from a given camera by computing appropriate matrices and sending all objects to OpenGL:
 	//"camera" must be non-null!
-	void draw(Camera const *camera, GLuint bg_tex, Object::ProgramType = Object::ProgramTypeDefault ) const;
+	void draw(Camera const *camera, GLuint bg_tex, GLuint hatch0_tex,
+        GLuint hatch1_tex, GLuint hatch2_tex, GLuint hatch3_tex,
+        GLuint hatch4_tex, GLuint hatch5_tex, Object::ProgramType = Object::ProgramTypeDefault ) const;
 
 	//Draw the scene from a given lamp by computing appropriate matrices and sending all objects to OpenGL:
 	//"lamp" must be non-null!
@@ -192,8 +194,6 @@ struct Scene {
 	void draw(
 		glm::mat4 const &world_to_clip,
 		Object::ProgramType program_type) const;
-
-    void hatch() const;
 
 	~Scene(); //destructor deallocates transforms, objects, cameras
 
