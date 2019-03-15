@@ -283,7 +283,7 @@ SceneProgram::SceneProgram() {
         "       if( m<1.5 ) col = 0.3 + vec3(0.1); \n"
                 // lighting
         "       float occ = calcAO( pos, nor ); \n"
-		"       vec3  lig = normalize( vec3(-0.4, 0.7, -0.6) ); \n"
+		"       vec3  lig = normalize( vec3(0.4, 0.7, -0.6) ); \n"
         "       vec3  hal = normalize( lig-rd ); \n"
 		"       float amb = clamp( 0.5+0.5*nor.y, 0.0, 1.0 ); \n"
         "       float dif = clamp( dot( nor, lig ), 0.0, 1.0 ); \n"
@@ -343,6 +343,7 @@ SceneProgram::SceneProgram() {
         "   float specularWeight = 1.0; \n"
         "   float shininess = 49.0; \n"
         "   float shading = (og.r+og.g+og.b)/3.0; \n"
+        "   if(shading>0) shading+=0.1; \n"
         "   vec4 c = vec4( 0.0, 0.0, 0.0, 1.0); \n"
         "   float step = 1.0/6.0; \n"
         "   if( shading <= step && shading > 0.0) \n"
