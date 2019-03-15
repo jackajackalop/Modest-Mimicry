@@ -343,7 +343,7 @@ SceneProgram::SceneProgram() {
         "   float specularWeight = 1.0; \n"
         "   float shininess = 49.0; \n"
         "   float shading = (og.r+og.g+og.b)/3.0; \n"
-        "   if(shading>0) shading+=0.1; \n"
+        "   if(shading>0) shading+=0.2; \n"
         "   vec4 c = vec4( 0.0, 0.0, 0.0, 1.0); \n"
         "   float step = 1.0/6.0; \n"
         "   if( shading <= step && shading > 0.0) \n"
@@ -358,6 +358,9 @@ SceneProgram::SceneProgram() {
         "       c = mix(hatch1, hatch0, 6.0*(shading-4.0*step)); \n"
         "   if( shading>5.0*step ) \n"
         "       c = mix( hatch0, vec4(1.0), 6.0*(shading-5.0*step)); \n"
+        "   vec4 inkColor = vec4(0.4, 0.4, 0.4, 1.0); \n"
+        "   if(shading>0) \n"
+        "       c = mix( mix( inkColor, vec4( 1. ), c.r ), c, .5 ); \n"
         "   return c; \n"
         "} \n"
 
