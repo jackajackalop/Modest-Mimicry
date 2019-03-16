@@ -35,6 +35,7 @@ struct GameMode : public Mode {
 
 	float camera_spin = 0.0f;
 	float spot_spin = 0.0f;
+    int level = 4;
     class Primitive{
         public:
             glm::vec3 position = glm::vec3(0.0, 0.0, 0.0);//2.0,0.5,0.25);

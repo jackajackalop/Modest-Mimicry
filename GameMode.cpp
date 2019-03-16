@@ -122,6 +122,21 @@ Load< GLuint > hatch4_tex(LoadTagDefault, [](){
 Load< GLuint > hatch5_tex(LoadTagDefault, [](){
 	return new GLuint(load_texture(data_path("textures/hatch_5.png")));
 });
+Load< GLuint > level0_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/level0.png")));
+});
+Load< GLuint > level1_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/level1.png")));
+});
+Load< GLuint > level2_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/level2.png")));
+});
+Load< GLuint > level3_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/level3.png")));
+});
+Load< GLuint > level4_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/level4.png")));
+});
 
 Load< GLuint > white_tex(LoadTagDefault, [](){
 	GLuint tex = 0;
@@ -383,8 +398,14 @@ void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_){
             glm::value_ptr(camera->transform->make_local_to_world()));
 
     set_prim_uniforms();
+    GLuint level_tex = 0;
+    if(level==0) level_tex= *level0_tex;
+    else if(level==1) level_tex = *level1_tex;
+    else if(level==2) level_tex = *level2_tex;
+    else if(level==3) level_tex = *level3_tex;
+    else if(level==4) level_tex = *level4_tex;
     scene->draw(camera, *bg_tex, *hatch0_tex, *hatch1_tex, *hatch2_tex,
-            *hatch3_tex, *hatch4_tex, *hatch5_tex);
+            *hatch3_tex, *hatch4_tex, *hatch5_tex, level_tex);
 }
 
 void GameMode::set_prim_uniforms(){

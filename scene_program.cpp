@@ -31,6 +31,7 @@ SceneProgram::SceneProgram() {
         "uniform sampler2D hatch3_tex;\n"
         "uniform sampler2D hatch4_tex;\n"
         "uniform sampler2D hatch5_tex;\n"
+        "uniform sampler2D model_tex; \n"
 
         "uniform int primitives[10];\n"
         "uniform float positionsX[10];\n"
@@ -358,7 +359,7 @@ SceneProgram::SceneProgram() {
         "       c = mix(hatch1, hatch0, 6.0*(shading-4.0*step)); \n"
         "   if( shading>5.0*step ) \n"
         "       c = mix( hatch0, vec4(1.0), 6.0*(shading-5.0*step)); \n"
-        "   vec4 inkColor = vec4(0.4, 0.4, 0.4, 1.0); \n"
+        "   vec4 inkColor = vec4(0.65, 0.5, 0.5, 1.0); \n"
         "   if(shading>0) \n"
         "       c = mix( mix( inkColor, vec4( 1. ), c.r ), c, .5 ); \n"
         "   return c; \n"
@@ -380,11 +381,13 @@ SceneProgram::SceneProgram() {
 		// gamma
         "   col = pow( col, vec3(0.4545) );\n"
         "   tot += col; \n"
-
+        "   vec4 model_color = texelFetch(model_tex, ivec2(gl_FragCoord.xy*vec2(2.5,2))-ivec2(1300,810),0);\n"
         "   vec4 bg_color = texelFetch(bg_tex, ivec2(vec2(1.7, 2)*gl_FragCoord.xy), 0)\n;"
         "   vec4 shaded = vec4(tot, 1.0);\n"
         "   vec4 hatched = shade(shaded); \n"
-        "   color_out = (hatched!=vec4(0,0,0,1)?hatched:bg_color); \n"
+        "   if(hatched!=vec4(0,0,0,1)) color_out = hatched; \n"
+        "   else color_out=(model_color.r>0.2?model_color:bg_color);\n"
+//        "   color_out = (hatched!=vec4(0,0,0,1)?hatched:bg_color); \n"
 		"}\n"
 	);
     object_to_clip_mat4 = glGetUniformLocation(program, "object_to_clip");
@@ -414,6 +417,7 @@ SceneProgram::SceneProgram() {
     glUniform1i(glGetUniformLocation(program, "hatch3_tex"), 5);
     glUniform1i(glGetUniformLocation(program, "hatch4_tex"), 6);
     glUniform1i(glGetUniformLocation(program, "hatch5_tex"), 7);
+    glUniform1i(glGetUniformLocation(program, "model_tex"), 8);
 
 	glUniform1i(tex_sampler2D, 0);
 

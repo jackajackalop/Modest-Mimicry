@@ -175,11 +175,11 @@ Scene::Camera *Scene::new_camera(Scene::Transform *transform) {
 void Scene::delete_camera(Scene::Camera *object) {
 	list_delete< Scene::Camera >(object);
 }
-GLuint bg, hatch0, hatch1, hatch2, hatch3, hatch4, hatch5;
+GLuint bg, hatch0, hatch1, hatch2, hatch3, hatch4, hatch5, level;
 
 void Scene::draw(Scene::Camera const *camera, GLuint bg_tex, GLuint hatch0_tex,
         GLuint hatch1_tex, GLuint hatch2_tex, GLuint hatch3_tex,
-        GLuint hatch4_tex, GLuint hatch5_tex, Object::ProgramType program_type) const {
+        GLuint hatch4_tex, GLuint hatch5_tex, GLuint level_tex, Object::ProgramType program_type) const {
 	assert(camera && "Must have a camera to draw scene from.");
 	assert(program_type < Object::ProgramTypes);
 
@@ -193,6 +193,7 @@ void Scene::draw(Scene::Camera const *camera, GLuint bg_tex, GLuint hatch0_tex,
     hatch3 = hatch3_tex;
     hatch4 = hatch4_tex;
     hatch5 = hatch5_tex;
+    level = level_tex;
 	draw(world_to_clip, program_type);
 }
 
@@ -262,6 +263,9 @@ void Scene::draw(glm::mat4 const &world_to_clip, Object::ProgramType program_typ
         glBindTexture(GL_TEXTURE_2D, hatch4);
         glActiveTexture(GL_TEXTURE7);
         glBindTexture(GL_TEXTURE_2D, hatch5);
+        glActiveTexture(GL_TEXTURE8);
+        glBindTexture(GL_TEXTURE_2D, level);
+
 
 	    glBindVertexArray(info.vao);
 
