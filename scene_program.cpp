@@ -45,6 +45,8 @@ SceneProgram::SceneProgram() {
 //		"in vec3 position;\n"
         "in float Time; \n"
         "layout(location=0) out vec4 color_out;\n"
+        "layout(location=1) out vec4 player_out;\n"
+        "layout(location=2) out vec4 model_out;\n"
 
         "float sdSphere( vec3 p, float s ){\n"
         "   return length(p)-s; \n"
@@ -158,7 +160,7 @@ SceneProgram::SceneProgram() {
         "           else if(primitives[i]==2) \n"
         "               res = opSU(res,vec2(sdBox(p-position,vec3(0.25*scale)),color));\n"
         "           else if(primitives[i]==3) \n"
-	    "               res = opSU(res,vec2(sdCone(p-position,vec3(0.8,0.6,0.3)*scale),color)); \n"
+	    "               res = opSU(res,vec2(sdCone(p-position,vec3(0.8,0.4,0.4)*scale),color)); \n"
         "           else if(primitives[i]==4) \n"
    	    "               res = opSU(res,vec2(sdCylinder(p-position,vec2(0.1,0.2)*scale ),color));\n"
         "       } \n"
@@ -387,7 +389,9 @@ SceneProgram::SceneProgram() {
         "   vec4 hatched = shade(shaded); \n"
         "   if(hatched!=vec4(0,0,0,1)) color_out = hatched; \n"
         "   else color_out=(model_color.r>0.2?model_color:bg_color);\n"
-//        "   color_out = (hatched!=vec4(0,0,0,1)?hatched:bg_color); \n"
+       // "   if(gl_FragCoord.y>400&&gl_FragCoord.y<700) color_out=vec4(1,0,0,1);"
+        "   player_out = hatched;\n"
+        "   model_out = model_color;\n"
 		"}\n"
 	);
     object_to_clip_mat4 = glGetUniformLocation(program, "object_to_clip");

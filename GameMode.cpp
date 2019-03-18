@@ -158,6 +158,7 @@ Scene::Camera *camera = nullptr;
 //Scene::Transform *spot_parent_transform = nullptr;
 //Scene::Lamp *spot = nullptr;
 
+int width =0, height =0;
 float elapsed_time = 0.0f;
 int edit_mode = 0; //0 for translation, 1 for rotation, 2 for scaling
 
@@ -255,6 +256,9 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	//ignore any keys that are the result of automatic key repeat:
 
     if (evt.type == SDL_KEYDOWN) {
+        if (evt.key.keysym.scancode == SDL_SCANCODE_SPACE)
+            std::cout<<score<<std::endl;
+
         if (evt.key.keysym.scancode == SDL_SCANCODE_T){
             edit_mode = 0; //translation
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_R){
@@ -329,6 +333,8 @@ struct Textures {
 	GLuint color_tex = 0;
     GLuint hatched_tex = 0;
 	GLuint depth_tex = 0;
+    GLuint player_tex = 0;
+    GLuint model_tex = 0;
 	void allocate(glm::uvec2 const &new_size) {
     //allocate full-screen framebuffer:
 
@@ -350,33 +356,47 @@ struct Textures {
             alloc_tex(&color_tex, GL_RGBA8, GL_RGBA);
             alloc_tex(&hatched_tex, GL_RGBA8, GL_RGBA);
             alloc_tex(&depth_tex, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT);
+            alloc_tex(&player_tex, GL_RGBA8, GL_RGBA);
+            alloc_tex(&model_tex, GL_RGBA8, GL_RGBA);
 			GL_ERRORS();
 		}
 
 	}
 } textures;
 
-void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_){
+void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_,
+        GLuint* player_tex_, GLuint* model_tex_){
     assert(color_tex_);
     assert(depth_tex_);
+    assert(player_tex_);
+    assert(model_tex_);
     auto &color_tex = *color_tex_;
     auto &depth_tex = *depth_tex_;
+    auto &player_tex = *player_tex_;
+    auto &model_tex = *model_tex_;
 
     static GLuint fb = 0;
     if(fb==0) glGenFramebuffers(1, &fb);
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                             color_tex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+                            player_tex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
+                            model_tex, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
                             depth_tex, 0);
-    GLenum bufs[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, bufs);
+    GLenum bufs[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
+        GL_COLOR_ATTACHMENT2};
+    glDrawBuffers(3, bufs);
     check_fb();
 
 
 	//Draw scene to off-screen framebuffer:
 	glBindFramebuffer(GL_FRAMEBUFFER, fb);
 	glViewport(0,0, textures.size.x, textures.size.y);
+    width = textures.size.x;
+    height = textures.size.y;
 
 	camera->aspect = textures.size.x / float(textures.size.y);
 
@@ -406,6 +426,77 @@ void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_){
     else if(level==4) level_tex = *level4_tex;
     scene->draw(camera, *bg_tex, *hatch0_tex, *hatch1_tex, *hatch2_tex,
             *hatch3_tex, *hatch4_tex, *hatch5_tex, level_tex);
+    GL_ERRORS();
+}
+
+void GameMode::compare(GLuint player_tex, GLuint model_tex){
+    //glm::vec2 size = textureSize(player_tex);
+    GLuint *p_pixels = new GLuint[width*height];
+    glBindTexture(GL_TEXTURE_2D, player_tex);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, p_pixels);
+    GLuint *m_pixels = new GLuint[width*height];
+    glBindTexture(GL_TEXTURE_2D, model_tex);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_pixels);
+    GL_ERRORS();
+
+    int p_xoffset = width;
+    int p_yoffset = height;
+    int p_xend = 0;
+    int p_yend = 0;
+    for(int i = 0.25*height; i<0.85*height; i++){
+        for(int j = 0.078*width; j<0.4*width; j++){
+            int index = j+i*width;
+            if((p_pixels[index]&0xFF)>0){
+                p_xoffset = glm::min(p_xoffset, j);
+                p_yoffset = glm::min(p_yoffset, i);
+                p_xend = glm::max(p_xend, j);
+                p_yend = glm::max(p_yend, i);
+            }
+        }
+    }
+    //std::cout<<p_xoffset<<" "<<p_xend<<std::endl;
+ //   std::cout<<p_yoffset<<" "<<p_yend<<std::endl;
+
+    int m_xoffset = width;
+    int m_yoffset = height;
+    int m_xend = 0;
+    int m_yend = 0;
+    for(int i = 0.5*height; i<0.875*height; i++){
+        for(int j = 0.45*width; j<0.625*width; j++){
+            int index = j+i*width;
+            if((m_pixels[index]&0xFF)>0){
+                m_xoffset = glm::min(m_xoffset, j);
+                m_yoffset = glm::min(m_yoffset, i);
+                m_xend = glm::max(m_xend, j);
+                m_yend = glm::max(m_yend, i);
+            }
+        }
+    }
+    //std::cout<<m_xoffset<<" "<<m_xend<<std::endl;
+    //std::cout<<m_yoffset<<" "<<m_yend<<std::endl;
+
+    score = 0;
+    int max_score = 1;
+    float p_xscale = (float)(p_xend-p_xoffset)/(float)(m_xend-m_xoffset);
+    float p_yscale = (float)(p_yend-p_yoffset)/(float)(m_yend-m_yoffset);
+
+    int iend = glm::min(m_yend-m_yoffset, p_yend-p_yoffset);
+    int jend = glm::min(m_xend-m_xoffset, p_xend-p_xoffset);
+    for(int i = 0; i<iend; i++){
+        for(int j = 0; j<jend; j++){
+            int mi = m_yoffset+i, mj = m_xoffset+j;
+            int pi = p_yoffset+i*p_yscale, pj = p_xoffset+j*p_xscale;
+            int m_index = mj+mi*width;
+            int p_index = pj+pi*width;
+            int m_color = (m_pixels[m_index]&0xFF00>>8);
+            int p_color = (p_pixels[p_index]&0xFF00>>8);
+            if(m_color>0)
+                max_score++;
+            if(m_color>0 && p_color>0 /*&& m_color<100 && p_color<100*/)
+                score++;
+        }
+    }
+    score = score*100/max_score;
 }
 
 void GameMode::set_prim_uniforms(){
@@ -453,7 +544,9 @@ void GameMode::set_prim_uniforms(){
 void GameMode::draw(glm::uvec2 const &drawable_size) {
 	textures.allocate(drawable_size);
 
-    draw_scene(&textures.color_tex, &textures.depth_tex);
+    draw_scene(&textures.color_tex, &textures.depth_tex, &textures.player_tex,
+            &textures.model_tex);
+    compare(textures.player_tex, textures.model_tex);
     glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glActiveTexture(GL_TEXTURE0);
