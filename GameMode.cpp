@@ -353,11 +353,11 @@ struct Textures {
 			    glBindTexture(GL_TEXTURE_2D, 0);
             };
 
-            alloc_tex(&color_tex, GL_RGBA8, GL_RGBA);
-            alloc_tex(&hatched_tex, GL_RGBA8, GL_RGBA);
+            alloc_tex(&color_tex, GL_RGBA, GL_RGBA);
+            alloc_tex(&hatched_tex, GL_RGBA, GL_RGBA);
             alloc_tex(&depth_tex, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT);
-            alloc_tex(&player_tex, GL_RGBA8, GL_RGBA);
-            alloc_tex(&model_tex, GL_RGBA8, GL_RGBA);
+            alloc_tex(&player_tex, GL_RGBA, GL_RGBA);
+            alloc_tex(&model_tex, GL_RGBA, GL_RGBA);
 			GL_ERRORS();
 		}
 
@@ -393,7 +393,6 @@ void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_,
 
 
 	//Draw scene to off-screen framebuffer:
-	glBindFramebuffer(GL_FRAMEBUFFER, fb);
 	glViewport(0,0, textures.size.x, textures.size.y);
     width = textures.size.x;
     height = textures.size.y;
@@ -426,17 +425,18 @@ void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_,
     else if(level==4) level_tex = *level4_tex;
     scene->draw(camera, *bg_tex, *hatch0_tex, *hatch1_tex, *hatch2_tex,
             *hatch3_tex, *hatch4_tex, *hatch5_tex, level_tex);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     GL_ERRORS();
 }
 
 void GameMode::compare(GLuint player_tex, GLuint model_tex){
-    //glm::vec2 size = textureSize(player_tex);
-    GLuint *p_pixels = new GLuint[width*height];
     glBindTexture(GL_TEXTURE_2D, player_tex);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, p_pixels);
-    GLuint *m_pixels = new GLuint[width*height];
+    GLuint *p_pixels = new GLuint[width*height*4];
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_INT, p_pixels);
+    GLuint *m_pixels = new GLuint[width*height*4];
     glBindTexture(GL_TEXTURE_2D, model_tex);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_pixels);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_INT, m_pixels);
+    glBindTexture(GL_TEXTURE_2D, 0);
     GL_ERRORS();
 
     int p_xoffset = width;
@@ -492,11 +492,15 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
             int p_color = (p_pixels[p_index]&0xFF00>>8);
             if(m_color>0)
                 max_score++;
-            if(m_color>0 && p_color>0 /*&& m_color<100 && p_color<100*/)
+          //  if(m_color>0 && p_color>0 && m_color<100 && p_color<100)
+            if(m_color>0 && p_color>0)
                 score++;
         }
     }
     score = score*100/max_score;
+
+    delete[] p_pixels;
+    delete[] m_pixels;
 }
 
 void GameMode::set_prim_uniforms(){

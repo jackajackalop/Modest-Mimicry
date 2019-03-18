@@ -274,7 +274,7 @@ void Scene::draw(glm::mat4 const &world_to_clip, Object::ProgramType program_typ
 	}
 
 	//unbind any still bound textures and go back to active texture unit zero:
-	for (uint32_t i = 0; i < Object::ProgramInfo::TextureCount; ++i) {
+	for (uint32_t i = 0; i < 9/*Object::ProgramInfo::TextureCount*/; ++i) {
 		glActiveTexture(GL_TEXTURE0 + i);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
