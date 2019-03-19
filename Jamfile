@@ -4,12 +4,12 @@
 #You shouldn't need to change it.
 
 if $(OS) = NT { #Windows
-	C++FLAGS = /nologo /Z7 /c /EHsc /W3 /WX /MD /I"kit-libs-win/out/include" /I"kit-libs-win/out/include/SDL2" /I"kit-libs-win/out/libpng"
+	C++FLAGS = /nologo /c /EHsc /W3 /WX /MD /I"kit-libs-win/out/include" /I"kit-libs-win/out/include/SDL2" /I"kit-libs-win/out/libpng"
 		#disable a few warnings:
 		/wd4146 #-1U is still unsigned
 		/wd4297 #unforunately SDLmain is nothrow
 	;
-	LINKFLAGS = /nologo /SUBSYSTEM:CONSOLE /DEBUG:FASTLINK
+	LINKFLAGS = /nologo /SUBSYSTEM:CONSOLE
 		/LIBPATH:"kit-libs-win/out/lib"
 		/LIBPATH:"kit-libs-win/out/libpng"
 		/LIBPATH:"kit-libs-win/out/zlib"
@@ -27,7 +27,7 @@ if $(OS) = NT { #Windows
 		`PATH=$(KIT_LIBS)/SDL2/bin:$PATH sdl2-config --cflags` #SDL2
 		;
 	LINK = clang++ ;
-	LINKFLAGS = -std=c++14 -g -Wall -Werror -DTWEAK_ENABLE ;
+	LINKFLAGS = -std=c++14 -g -Wall -Werror ;
 	LINKLIBS =
 		-L$(KIT_LIBS)/libpng/lib -lpng                      #libpng
 		-L$(KIT_LIBS)/zlib/lib -lz                          #zlib
@@ -37,13 +37,13 @@ if $(OS) = NT { #Windows
 	KIT_LIBS = kit-libs-linux ;
 	C++ = g++ ;
 	C++FLAGS =
-		-std=c++14 -g -Wall -Werror -DTWEAK_ENABLE
+		-std=c++11 -g -Wall -Werror
 		-I$(KIT_LIBS)/libpng/include                           #libpng
 		-I$(KIT_LIBS)/glm/include                              #glm
 		`PATH=$(KIT_LIBS)/SDL2/bin:$PATH sdl2-config --cflags` #SDL2
 		;
 	LINK = g++ ;
-	LINKFLAGS = -std=c++14 -g -Wall -Werror -DTWEAK_ENABLE ;
+	LINKFLAGS = -std=c++11 -g -Wall -Werror ;
 	LINKLIBS =
 		-L$(KIT_LIBS)/libpng/lib -lpng                      #libpng
 		-L$(KIT_LIBS)/zlib/lib -lz                          #zlib
@@ -60,8 +60,8 @@ SERVER_NAMES =
 	;
 
 COMMON_NAMES =
-#	Connection
-#	Game
+	Connection
+	Game
 	;
 
 CLIENT_NAMES =
@@ -69,9 +69,9 @@ CLIENT_NAMES =
 	main
 	data_path
 	compile_program
+    scene_program
+    depth_program
 	vertex_color_program
-	scene_program
-	depth_program
 	Scene
 	Mode
 	GameMode
@@ -88,10 +88,8 @@ if $(OS) = NT {
 }
 
 LOCATE_TARGET = objs ; #put objects in 'objs' directory
-Objects $(CLIENT_NAMES:S=.cpp) ;
-#Objects $(SERVER_NAMES:S=.cpp) ;
-Objects $(COMMON_NAMES:S=.cpp) ;
+Objects $(CLIENT_NAMES:S=.cpp) $(SERVER_NAMES:S=.cpp) $(COMMON_NAMES:S=.cpp) ;
 
 LOCATE_TARGET = dist ; #put main in 'dist' directory
-MainFromObjects main : $(CLIENT_NAMES:S=$(SUFOBJ)) $(COMMON_NAMES:S=$(SUFOBJ)) ;
-#MainFromObjects server : $(SERVER_NAMES:S=$(SUFOBJ)) $(COMMON_NAMES:S=$(SUFOBJ)) ;
+MainFromObjects client : $(CLIENT_NAMES:S=$(SUFOBJ)) $(COMMON_NAMES:S=$(SUFOBJ)) ;
+MainFromObjects server : $(SERVER_NAMES:S=$(SUFOBJ)) $(COMMON_NAMES:S=$(SUFOBJ)) ;

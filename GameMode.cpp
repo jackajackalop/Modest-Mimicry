@@ -239,7 +239,8 @@ Load< Scene > scene(LoadTagDefault, [](){
 	return ret;
 });
 
-GameMode::GameMode() {
+GameMode::GameMode(Client &client_) : client(client_) {
+    client.connection.send_raw("h", 1); //send a 'hello' to the server
 }
 
 GameMode::~GameMode() {
@@ -445,7 +446,7 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
     int p_yend = 0;
     for(int i = 0.25*height; i<0.85*height; i++){
         for(int j = 0.078*width; j<0.4*width; j++){
-            int index = j+i*width;
+            int index = (j+i*width)*4;
             if((p_pixels[index]&0xFF)>0){
                 p_xoffset = glm::min(p_xoffset, j);
                 p_yoffset = glm::min(p_yoffset, i);
@@ -463,7 +464,7 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
     int m_yend = 0;
     for(int i = 0.5*height; i<0.875*height; i++){
         for(int j = 0.45*width; j<0.625*width; j++){
-            int index = j+i*width;
+            int index = (j+i*width)*4;
             if((m_pixels[index]&0xFF)>0){
                 m_xoffset = glm::min(m_xoffset, j);
                 m_yoffset = glm::min(m_yoffset, i);
@@ -484,20 +485,20 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
     int jend = glm::min(m_xend-m_xoffset, p_xend-p_xoffset);
     for(int i = 0; i<iend; i++){
         for(int j = 0; j<jend; j++){
-            int mi = m_yoffset+i, mj = m_xoffset+j;
-            int pi = p_yoffset+i*p_yscale, pj = p_xoffset+j*p_xscale;
+            int mi = (m_yoffset+i)*4, mj = (m_xoffset+j)*4;
+            int pi = (p_yoffset+i*p_yscale)*4, pj = (p_xoffset+j*p_xscale)*4;
             int m_index = mj+mi*width;
             int p_index = pj+pi*width;
             int m_color = (m_pixels[m_index]&0xFF00>>8);
             int p_color = (p_pixels[p_index]&0xFF00>>8);
             if(m_color>0)
                 max_score++;
-          //  if(m_color>0 && p_color>0 && m_color<100 && p_color<100)
             if(m_color>0 && p_color>0)
                 score++;
         }
     }
-    score = score*100/max_score;
+    score = score*200/max_score;
+    score = glm::clamp(score, 0, 100);
 
     delete[] p_pixels;
     delete[] m_pixels;

@@ -5,6 +5,7 @@
 
 #include "MeshBuffer.hpp"
 #include "GL.hpp"
+#include "Connection.hpp"
 
 #include <SDL.h>
 #include <glm/glm.hpp>
@@ -16,7 +17,7 @@
 // The 'GameMode' mode is the main gameplay mode:
 
 struct GameMode : public Mode {
-	GameMode();
+	GameMode(Client &client);
 	virtual ~GameMode();
 
 	//handle_event is called when new mouse or keyboard events are received:
@@ -49,4 +50,7 @@ struct GameMode : public Mode {
 
     int selected = 0;
     std::vector<Primitive> primitives;
+
+	//------ networking ------
+	Client &client; //client object; manages connection to server.
 };
