@@ -38,7 +38,7 @@ constexpr const SOCKET INVALID_SOCKET = -1;
 #include <string>
 #include <functional>
 
-/* 
+/*
  * Connection is a simple wrapper around a TCP socket connection.
  * You don't create 'Connection' objects yourself, rather, you
  * create a Client or Server object which will manage connection(s)
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 	Client client("localhost", "1337"); //connect to a local server at port 1337
 	while (true) {
 		client.poll([](Connection *connection, Connection::Event evt){
-			
+
 		},
 		0.0 //timeout (in seconds)
 		);

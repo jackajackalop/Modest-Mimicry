@@ -161,6 +161,8 @@ Scene::Camera *camera = nullptr;
 int width =0, height =0;
 float elapsed_time = 0.0f;
 int edit_mode = 0; //0 for translation, 1 for rotation, 2 for scaling
+int prim_num = 0;
+Game state1, state2;
 
 Load< Scene > scene(LoadTagDefault, [](){
 	Scene *ret = new Scene;
@@ -247,10 +249,11 @@ GameMode::~GameMode() {
 }
 
 void GameMode::add_primitive(int primitive_type){
-   Primitive new_prim;
-   new_prim.shape = primitive_type;
-   primitives.emplace_back(new_prim);
-   std::cout<<"added"<<std::endl;
+    Primitive new_prim;
+    new_prim.shape = primitive_type;
+    state1.primitives[prim_num] = new_prim;
+    prim_num++;
+    std::cout<<"added"<<std::endl;
 }
 
 bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -270,10 +273,10 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
         if (evt.key.keysym.scancode == SDL_SCANCODE_LEFT){
             selected = selected-1;
-            if(selected<0) selected = primitives.size()-1;
+            if(selected<0) selected = prim_num-1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_RIGHT){
             selected = selected+1;
-            if(selected>=int(primitives.size())) selected = 0;
+            if(selected>=prim_num) selected = 0;
         }
 
         if (evt.key.keysym.scancode == SDL_SCANCODE_1) {
@@ -287,29 +290,29 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
         }
 
         if(evt.key.keysym.scancode == SDL_SCANCODE_A){
-            if(edit_mode==0) primitives[selected].position.z+=0.1;
-            else if(edit_mode==1) primitives[selected].rotation.y -= 0.1;
-            else if(edit_mode==2) primitives[selected].scale -= 0.1;
+            if(edit_mode==0) state1.primitives[selected].position.z+=0.1;
+            else if(edit_mode==1)state1.primitives[selected].rotation.y -= 0.1;
+            else if(edit_mode==2) state1.primitives[selected].scale -= 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_D){
-            if(edit_mode==0) primitives[selected].position.z-=0.1;
-            else if(edit_mode==1) primitives[selected].rotation.y += 0.1;
-            else if(edit_mode==2) primitives[selected].scale += 0.1;
+            if(edit_mode==0) state1.primitives[selected].position.z-=0.1;
+            else if(edit_mode==1) state1.primitives[selected].rotation.y += 0.1;
+            else if(edit_mode==2) state1.primitives[selected].scale += 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_W){
-            if(edit_mode==0) primitives[selected].position.y+=0.1;
-            else if(edit_mode==1) primitives[selected].rotation.z += 0.1;
-            else if(edit_mode==2) primitives[selected].scale += 0.1;
+            if(edit_mode==0) state1.primitives[selected].position.y+=0.1;
+            else if(edit_mode==1)state1.primitives[selected].rotation.z += 0.1;
+            else if(edit_mode==2) state1.primitives[selected].scale += 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_S){
-            if(edit_mode==0) primitives[selected].position.y-=0.1;
-            else if(edit_mode==1) primitives[selected].rotation.z -= 0.1;
-            else if(edit_mode==2) primitives[selected].scale -= 0.1;
+            if(edit_mode==0) state1.primitives[selected].position.y-=0.1;
+            else if(edit_mode==1)state1.primitives[selected].rotation.z -= 0.1;
+            else if(edit_mode==2) state1.primitives[selected].scale -= 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_Q){
-            if(edit_mode==0) primitives[selected].position.x-=0.1;
-            else if(edit_mode==1) primitives[selected].rotation.x += 0.1;
-            else if(edit_mode==2) primitives[selected].scale -= 0.1;
+            if(edit_mode==0) state1.primitives[selected].position.x-=0.1;
+            else if(edit_mode==1)state1.primitives[selected].rotation.x += 0.1;
+            else if(edit_mode==2) state1.primitives[selected].scale -= 0.1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_E){
-            if(edit_mode==0) primitives[selected].position.x+=0.1;
-            else if(edit_mode==1) primitives[selected].rotation.x -= 0.1;
-            else if(edit_mode==2) primitives[selected].scale += 0.1;
+            if(edit_mode==0) state1.primitives[selected].position.x+=0.1;
+            else if(edit_mode==1)state1.primitives[selected].rotation.x -= 0.1;
+            else if(edit_mode==2) state1.primitives[selected].scale += 0.1;
         }
 
     }
@@ -324,6 +327,39 @@ void GameMode::update(float elapsed) {
 	camera_parent_transform->rotation = glm::angleAxis(camera_spin, glm::vec3(0.0f, 0.0f, 1.0f));
 //	spot_parent_transform->rotation = glm::angleAxis(spot_spin, glm::vec3(0.0f, 0.0f, 1.0f));
     elapsed_time+=elapsed;
+    if (client.connection) {
+        //send game state to server:
+        client.connection.send_raw("a", 1);
+        client.connection.send_raw(&state1.primitives, 10*sizeof(Primitive));
+    }
+    client.poll([&](Connection *c, Connection::Event event){
+        if (event == Connection::OnOpen) {
+        //probably won't get this.
+        } else if (event == Connection::OnClose) {
+            std::cerr << "Lost connection to server." << std::endl;
+        } else { assert(event == Connection::OnRecv);}
+
+        if(c->recv_buffer[0] == 'p'){
+            if(c->recv_buffer.size() < 2){
+                return;
+            }else{
+                memcpy(&playerNum, c->recv_buffer.data()+1, 1);
+                c->recv_buffer.erase(c->recv_buffer.begin(),
+                        c->recv_buffer.begin() + 2);
+                std::cout<<"You're Player "<<playerNum<<std::endl;
+            }
+        }else if (c->recv_buffer[0] == 'a') {
+            if (c->recv_buffer.size() < 1 + sizeof(Game)) {
+                return; //wait for more data
+            } else {
+                    memcpy(&state2.primitives, c->recv_buffer.data()+1,
+                            10*sizeof(Primitive));
+                    c->recv_buffer.erase(c->recv_buffer.begin(),
+                        c->recv_buffer.begin() + 1 + 10*sizeof(Primitive));
+            }
+        }
+    });
+
 }
 
 //GameMode will render to some offscreen framebuffer(s).
@@ -505,7 +541,7 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
 }
 
 void GameMode::set_prim_uniforms(){
-    int n = primitives.size();
+    //int n = state1.primitives.size();
     int prim10[10];
     float posX10[10];
     float posY10[10];
@@ -514,26 +550,34 @@ void GameMode::set_prim_uniforms(){
     float rotY10[10];
     float rotZ10[10];
     float scale10[10];
+    //int nb = state2.primitives.size();
+    int prim10b[10];
+    float posX10b[10];
+    float posY10b[10];
+    float posZ10b[10];
+    float rotX10b[10];
+    float rotY10b[10];
+    float rotZ10b[10];
+    float scale10b[10];
+    //std::cout<<n<<" "<<nb<<std::endl;
     for(int i = 0; i<10; i++){
-        if(i<n){
-            prim10[i] = primitives[i].shape;
-            posX10[i] = primitives[i].position.x;
-            posY10[i] = primitives[i].position.y;
-            posZ10[i] = primitives[i].position.z;
-            rotX10[i] = primitives[i].rotation.x;
-            rotY10[i] = primitives[i].rotation.y;
-            rotZ10[i] = primitives[i].rotation.z;
-            scale10[i] = primitives[i].scale;
-        }else{
-            prim10[i] = 0;
-            posX10[i] = 0;
-            posY10[i] = 0;
-            posZ10[i] = 0;
-            scale10[i] = 1;
-            rotX10[i] = 0;
-            rotY10[i] = 0;
-            rotZ10[i] = 0;
-        }
+    //    if(i<n){
+            prim10[i] = state1.primitives[i].shape;
+            posX10[i] = state1.primitives[i].position.x;
+            posY10[i] = state1.primitives[i].position.y;
+            posZ10[i] = state1.primitives[i].position.z;
+            rotX10[i] = state1.primitives[i].rotation.x;
+            rotY10[i] = state1.primitives[i].rotation.y;
+            rotZ10[i] = state1.primitives[i].rotation.z;
+            scale10[i] = state1.primitives[i].scale;
+            prim10b[i] = state2.primitives[i].shape;
+            posX10b[i] = state2.primitives[i].position.x;
+            posY10b[i] = state2.primitives[i].position.y;
+            posZ10b[i] = state2.primitives[i].position.z;
+            rotX10b[i] = state2.primitives[i].rotation.x;
+            rotY10b[i] = state2.primitives[i].rotation.y;
+            rotZ10b[i] = state2.primitives[i].rotation.z;
+            scale10b[i] = state2.primitives[i].scale;
     }
     glUniform1iv(scene_program->primitives, 10, prim10);
     glUniform1fv(scene_program->positionsX, 10, posX10);
@@ -544,6 +588,15 @@ void GameMode::set_prim_uniforms(){
     glUniform1fv(scene_program->rotationsZ, 10, rotZ10);
     glUniform1fv(scene_program->scales, 10, scale10);
     glUniform1i(scene_program->selected, selected);
+    glUniform1iv(scene_program->primitivesb, 10, prim10b);
+    glUniform1fv(scene_program->positionsXb, 10, posX10b);
+    glUniform1fv(scene_program->positionsYb, 10, posY10b);
+    glUniform1fv(scene_program->positionsZb, 10, posZ10b);
+    glUniform1fv(scene_program->rotationsXb, 10, rotX10b);
+    glUniform1fv(scene_program->rotationsYb, 10, rotY10b);
+    glUniform1fv(scene_program->rotationsZb, 10, rotZ10b);
+    glUniform1fv(scene_program->scalesb, 10, scale10b);
+
 }
 
 void GameMode::draw(glm::uvec2 const &drawable_size) {

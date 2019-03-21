@@ -41,6 +41,14 @@ SceneProgram::SceneProgram() {
         "uniform float rotationsY[10];\n"
         "uniform float rotationsZ[10];\n"
         "uniform float scales[10]; \n"
+        "uniform int primitivesb[10];\n"
+        "uniform float positionsXb[10];\n"
+        "uniform float positionsYb[10];\n"
+        "uniform float positionsZb[10];\n"
+        "uniform float rotationsXb[10];\n"
+        "uniform float rotationsYb[10];\n"
+        "uniform float rotationsZb[10];\n"
+        "uniform float scalesb[10]; \n"
         "uniform int selected;"
 //		"in vec3 position;\n"
         "in float Time; \n"
@@ -144,11 +152,6 @@ SceneProgram::SceneProgram() {
 
         "vec2 map( in vec3 pos ){ \n"
         "   vec2 res = vec2( 1e10, 0.0 ); \n"
-	   /* "   res = opU(res,vec2(sdSphere(pos-vec3(0.0,0.25,0.0),0.25),46.9));\n"
-        "   res = opU(res,vec2(sdTorus(pos-vec3(0.0,0.25,1.0),vec2(0.20,0.05)),25.0)); \n"
-	    "   res = opU(res,vec2(sdCone(pos-vec3(0.0,0.50,-1.0),vec3(0.8,0.6,0.3) ),55.0)); \n"
-        "   res = opU(res,vec2(sdBox(pos-vec3(0.0,0.25,2.0),vec3(0.25)),3.0));\n"
-   	    "   res = opU(res,vec2(sdCylinder(pos-vec3(0.0,0.30,-2.0),vec2(0.1,0.2) ),8.0));\n"*/
         "   for(int i = 0; i<10; i++){ \n"
         "       if(primitives[i]>0){ \n"
         "           vec3 position = vec3(positionsX[i], positionsY[i], positionsZ[i]); \n"
@@ -164,6 +167,20 @@ SceneProgram::SceneProgram() {
         "           else if(primitives[i]==4) \n"
    	    "               res = opSU(res,vec2(sdCylinder(p-position,vec2(0.1,0.2)*scale ),color));\n"
         "       } \n"
+        "       if(primitivesb[i]>0){ \n"
+        "           vec3 position = vec3(positionsXb[i], positionsYb[i], positionsZb[i]); \n"
+        "           vec3 p = position+rotateX(rotationsXb[i])*rotateY(rotationsYb[i])*rotateZ(rotationsZb[i])*(pos-position);\n"
+        "           float scale = scalesb[i]; \n"
+        "           float color = 2.0; \n"
+        "           if(primitivesb[i]==1) \n"
+	    "               res = opSU(res,vec2(sdSphere(p-position,0.25*scale),color));\n"
+        "           else if(primitivesb[i]==2) \n"
+        "               res = opSU(res,vec2(sdBox(p-position,vec3(0.25*scale)),color));\n"
+        "           else if(primitivesb[i]==3) \n"
+	    "               res = opSU(res,vec2(sdCone(p-position,vec3(0.8,0.4,0.4)*scale),color)); \n"
+        "           else if(primitivesb[i]==4) \n"
+   	    "               res = opSU(res,vec2(sdCylinder(p-position,vec2(0.1,0.2)*scale ),color));\n"
+        "       }\n"
         "   } \n"
         "   return res; \n"
         "} \n"
@@ -410,6 +427,14 @@ SceneProgram::SceneProgram() {
 	rotationsZ = glGetUniformLocation(program, "rotationsZ");
     scales = glGetUniformLocation(program, "scales");
     selected = glGetUniformLocation(program, "selected");
+    primitivesb = glGetUniformLocation(program, "primitivesb");
+	positionsXb = glGetUniformLocation(program, "positionsXb");
+	positionsYb = glGetUniformLocation(program, "positionsYb");
+	positionsZb = glGetUniformLocation(program, "positionsZb");
+	rotationsXb = glGetUniformLocation(program, "rotationsXb");
+	rotationsYb = glGetUniformLocation(program, "rotationsYb");
+	rotationsZb = glGetUniformLocation(program, "rotationsZb");
+    scalesb = glGetUniformLocation(program, "scalesb");
 
 	glUseProgram(program);
 

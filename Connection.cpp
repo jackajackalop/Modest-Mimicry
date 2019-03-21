@@ -125,7 +125,7 @@ void poll_connections(
 			ssize_t ret = send(c.socket, reinterpret_cast< char const * >(c.send_buffer.data()), int(c.send_buffer.size()), MSG_DONTWAIT);
 #else
 			ssize_t ret = send(c.socket, reinterpret_cast< char const * >(c.send_buffer.data()), c.send_buffer.size(), MSG_DONTWAIT);
-#endif 
+#endif
 			if (ret < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
 				//~no problem~, but don't keep trying
 				break;

@@ -2,6 +2,7 @@
 
 #include "Mode.hpp"
 #include "Load.hpp"
+#include "Game.hpp"
 
 #include "MeshBuffer.hpp"
 #include "GL.hpp"
@@ -40,17 +41,8 @@ struct GameMode : public Mode {
 	float spot_spin = 0.0f;
     int level = 0;
     int score = 0;
-    class Primitive{
-        public:
-            glm::vec3 position = glm::vec3(0.0, 0.0, 0.0);//2.0,0.5,0.25);
-            glm::vec3 rotation = glm::vec3(0.0,0.0,0.0); //euler angle values
-            float scale = 1.0f;
-            int shape = 0;
-    };
-
     int selected = 0;
-    std::vector<Primitive> primitives;
-
+    char playerNum;
 	//------ networking ------
 	Client &client; //client object; manages connection to server.
 };

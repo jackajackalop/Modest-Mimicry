@@ -23,6 +23,15 @@ struct SceneProgram {
     GLuint rotationsZ = -1U;
     GLuint scales = -1U;
     GLuint selected = -1U;
+    GLuint primitivesb = -1U;
+    GLuint positionsXb = -1U;
+    GLuint positionsYb = -1U;
+    GLuint positionsZb = -1U;
+    GLuint rotationsXb = -1U;
+    GLuint rotationsYb = -1U;
+    GLuint rotationsZb = -1U;
+    GLuint scalesb = -1U;
+
 	//textures:
 	//texture0 - texture for the surface
 	//texture1 - texture for spot light shadow map
