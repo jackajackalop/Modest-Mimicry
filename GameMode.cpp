@@ -254,6 +254,14 @@ void GameMode::add_primitive(int primitive_type){
     if(state1.prim_num>=10) return;
     Primitive new_prim;
     new_prim.shape = primitive_type;
+
+    float z;
+    if(playerNum=='0'){
+        z = 0.8;
+    }else{
+        z= -1.4;
+    }
+    new_prim.position = glm::vec3(0, -0.3, z);
     state1.primitives[state1.prim_num] = new_prim;
     state1.prim_num++;
     std::cout<<"added"<<std::endl;
