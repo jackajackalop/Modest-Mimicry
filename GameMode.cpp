@@ -159,7 +159,7 @@ Scene::Camera *camera = nullptr;
 //Scene::Lamp *spot = nullptr;
 
 int width =0, height =0;
-float time_left = 2.0;
+float time_left = 100.0;
 int edit_mode = 0; //0 for translation, 1 for rotation, 2 for scaling
 bool updated = false;
 bool paused = false;
@@ -708,7 +708,7 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 }
 
 void GameMode::reset(){
-    time_left = 2.0;
+    time_left = 100.0;
     edit_mode = 0; //0 for translation, 1 for rotation, 2 for scaling
     state1.prim_num = 0;
     state2.prim_num = 0;
@@ -742,7 +742,6 @@ void GameMode::show_lose() {
 }
 
 void GameMode::show_win() {
-    std::cout<<"FKDSLFJLDSFL"<<std::endl;
 	std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
 
 	std::shared_ptr< Mode > game = shared_from_this();
