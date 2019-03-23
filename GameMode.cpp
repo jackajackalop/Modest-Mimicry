@@ -159,7 +159,8 @@ Scene::Camera *camera = nullptr;
 //Scene::Lamp *spot = nullptr;
 
 int width =0, height =0;
-float time_left = 100.0;
+int time_left = 100;
+int elapsed_time = 0;
 int edit_mode = 0; //0 for translation, 1 for rotation, 2 for scaling
 bool updated = false;
 bool paused = false;
@@ -328,21 +329,19 @@ void GameMode::update(float elapsed) {
     if(paused) return;
 	camera_parent_transform->rotation = glm::angleAxis(camera_spin, glm::vec3(0.0f, 0.0f, 1.0f));
 //	spot_parent_transform->rotation = glm::angleAxis(spot_spin, glm::vec3(0.0f, 0.0f, 1.0f));
-    time_left-=elapsed;
-    if(time_left<=0.0){
-        if(score1>score2){
-            if(playerNum==0) show_win();
-            else show_lose();
+    time_left = (100*(level+1))-elapsed_time;
+    if(time_left<=0){
+        if(state1.score>state2.score){
+            show_win();
         }else{
-            if(playerNum==0) show_lose();
-            else show_win();
+            show_lose();
         }
     }
 
     if (client.connection) {
         //send game state to server:
         client.connection.send_raw("a", 1);
-        client.connection.send_raw(&state1.primitives, 10*sizeof(Primitive));
+        client.connection.send_raw(&state1, sizeof(state1));
     }
     client.poll([&](Connection *c, Connection::Event event){
         if (event == Connection::OnOpen) {
@@ -361,13 +360,17 @@ void GameMode::update(float elapsed) {
                 std::cout<<"You're Player "<<playerNum<<std::endl;
             }
         }else if (c->recv_buffer[0] == 'a') {
-            if (c->recv_buffer.size() < 1 + sizeof(Game)) {
+            if (c->recv_buffer.size() < 1 + sizeof(state2)) {
                 return; //wait for more data
             } else {
-                    memcpy(&state2.primitives, c->recv_buffer.data()+1,
-                            10*sizeof(Primitive));
+                    memcpy(&state2, c->recv_buffer.data()+1,
+                            sizeof(state2));
+                    memcpy(&elapsed_time,
+                            c->recv_buffer.data()+1+sizeof(state2),
+                            sizeof(int));
                     c->recv_buffer.erase(c->recv_buffer.begin(),
-                        c->recv_buffer.begin() + 1 + 10*sizeof(Primitive));
+                        c->recv_buffer.begin()+ 1 + sizeof(state2)+sizeof(int));
+                    //std::cout<<state1.score<<" "<<state2.score<<std::endl;
             }
         }
     });
@@ -463,7 +466,6 @@ void GameMode::draw_scene(GLuint text_tex, GLuint* color_tex_,
 
 	glUseProgram(scene_program->program);
 
-    glUniform1f(scene_program->time, time_left);
     glUniform3fv(scene_program->viewPos, 1,
             glm::value_ptr(camera->transform->make_local_to_world()));
 
@@ -496,8 +498,16 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
     int p_yoffset = height;
     int p_xend = 0;
     int p_yend = 0;
+    int jmin, jmax;
+    if(playerNum=='0'){
+        jmin = 0.078*width;
+        jmax = 0.4*width;
+    }else{
+        jmin = 0.688*width;
+        jmax = 0.99*width;
+    }
     for(int i = 0.25*height; i<0.85*height; i++){
-        for(int j = 0.078*width; j<0.4*width; j++){
+        for(int j = jmin; j<jmax; j++){
             int index = (j+i*width)*4;
             if((p_pixels[index]&0xFF)>0){
                 p_xoffset = glm::min(p_xoffset, j);
@@ -507,22 +517,8 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
             }
         }
     }
-    int p2_xoffset = width;
-    int p2_yoffset = height;
-    int p2_xend = 0;
-    int p2_yend = 0;
-    for(int i = 0.25*height; i<0.85*height; i++){
-        for(int j = 0.688*width; j<0.99*width; j++){
-            int index = (j+i*width)*4;
-            if((p_pixels[index]&0xFF)>0){
-                p2_xoffset = glm::min(p2_xoffset, j);
-                p2_yoffset = glm::min(p2_yoffset, i);
-                p2_xend = glm::max(p2_xend, j);
-                p2_yend = glm::max(p2_yend, i);
-            }
-        }
-    }
     //std::cout<<p_xoffset<<" "<<p_xend<<std::endl;
+    //std::cout<<p2_xoffset<<" "<<p2_xend<<std::endl;
  //   std::cout<<p_yoffset<<" "<<p_yend<<std::endl;
 
     int m_xoffset = width;
@@ -543,7 +539,7 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
     //std::cout<<m_xoffset<<" "<<m_xend<<std::endl;
     //std::cout<<m_yoffset<<" "<<m_yend<<std::endl;
 
-    score1 = 0;
+    state1.score = 0;
     int max_score = 1;
     float p_xscale = (float)(p_xend-p_xoffset)/(float)(m_xend-m_xoffset);
     float p_yscale = (float)(p_yend-p_yoffset)/(float)(m_yend-m_yoffset);
@@ -561,31 +557,11 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
             if(m_color>0)
                 max_score++;
             if(m_color>0 && p_color>0)
-                score1++;
+                state1.score++;
         }
     }
-    score1 = score1*200/max_score;
-    score1 = glm::clamp(score1, 0, 100);
-
-    p_xscale = (float)(p2_xend-p2_xoffset)/(float)(m_xend-m_xoffset);
-    p_yscale = (float)(p2_yend-p2_yoffset)/(float)(m_yend-m_yoffset);
-
-    iend = glm::min(m_yend-m_yoffset, p2_yend-p2_yoffset);
-    jend = glm::min(m_xend-m_xoffset, p2_xend-p2_xoffset);
-    for(int i = 0; i<iend; i++){
-        for(int j = 0; j<jend; j++){
-            int mi = (m_yoffset+i)*4, mj = (m_xoffset+j)*4;
-            int pi = (p2_yoffset+i*p_yscale)*4, pj = (p2_xoffset+j*p_xscale)*4;
-            int m_index = mj+mi*width;
-            int p_index = pj+pi*width;
-            int m_color = (m_pixels[m_index]&0xFF00>>8);
-            int p_color = (p_pixels[p_index]&0xFF00>>8);
-            if(m_color>0 && p_color>0)
-                score2++;
-        }
-    }
-    score2 = score2*200/max_score;
-    score2 = glm::clamp(score2, 0, 100);
+    state1.score = state1.score*200/max_score;
+    state1.score = glm::clamp(state1.score, 0, 100);
 
     delete[] p_pixels;
     delete[] m_pixels;
@@ -608,7 +584,6 @@ void GameMode::set_prim_uniforms(){
     float rotY10b[10];
     float rotZ10b[10];
     float scale10b[10];
-    //std::cout<<n<<" "<<nb<<std::endl;
     for(int i = 0; i<10; i++){
         if(i<state1.prim_num){
             prim10[i] = state1.primitives[i].shape;
@@ -656,7 +631,7 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 
     {//draw score and timer
 		glDisable(GL_DEPTH_TEST);
-        std::string message = "SCORE"+std::to_string(score1);
+        std::string message ="SCORE"+std::to_string(playerNum=='0'?state1.score:state2.score);
 		float height = 0.05f;
         static GLuint fb = 0;
         if(fb==0) glGenFramebuffers(1, &fb);
@@ -673,7 +648,7 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
         GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
         glClearBufferfv(GL_COLOR, 0, black);
 		draw_text(message, glm::vec2(-1.0,-0.58), height);
-        message = "SCORE "+std::to_string(score2);
+        message = "SCORE "+std::to_string(playerNum=='1'?state1.score:state2.score);
 		draw_text(message, glm::vec2(1.0,-0.58), height);
         message = "TIME "+std::to_string(int(time_left));
         height = 0.1;
@@ -708,14 +683,14 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 }
 
 void GameMode::reset(){
-    time_left = 100.0;
+    time_left = 100.0*(level+1);
     edit_mode = 0; //0 for translation, 1 for rotation, 2 for scaling
     state1.prim_num = 0;
     state2.prim_num = 0;
     updated = false;
     paused = false;
-    score1 = 0;
-    score2 = 0;
+    state1.score = 0;
+    state2.score = 0;
     selected = 0;
 }
 
@@ -735,7 +710,7 @@ void GameMode::show_lose() {
 			Mode::set_current(nullptr);
 			});
 
-	menu->selected = 2;
+	menu->selected = 1;
 	paused = true;
 
 	Mode::set_current(menu);

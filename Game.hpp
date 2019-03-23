@@ -16,4 +16,5 @@ class Primitive{
 struct Game {
     Primitive primitives[10];
     int prim_num = 0;
+    int score = 0;
 };
