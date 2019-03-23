@@ -32,6 +32,7 @@ SceneProgram::SceneProgram() {
         "uniform sampler2D hatch4_tex;\n"
         "uniform sampler2D hatch5_tex;\n"
         "uniform sampler2D model_tex; \n"
+        "uniform sampler2D text_tex; \n"
 
         "uniform int primitives[10];\n"
         "uniform float positionsX[10];\n"
@@ -402,11 +403,12 @@ SceneProgram::SceneProgram() {
         "   tot += col; \n"
         "   vec4 model_color = texelFetch(model_tex, ivec2(gl_FragCoord.xy*vec2(2.5,2))-ivec2(1300,810),0);\n"
         "   vec4 bg_color = texelFetch(bg_tex, ivec2(vec2(1.7, 2)*gl_FragCoord.xy), 0)\n;"
+        "   vec4 text_color = texelFetch(text_tex, ivec2(gl_FragCoord.xy), 0); \n"
         "   vec4 shaded = vec4(tot, 1.0);\n"
-        "   vec4 hatched = shade(shaded); \n"
+        "   vec4 hatched = (text_color.r!=0?text_color:shade(shaded)); \n"
         "   if(hatched!=vec4(0,0,0,1)) color_out = hatched; \n"
         "   else color_out=(model_color.r>0.2?model_color:bg_color);\n"
-       // "   if(gl_FragCoord.y>400&&gl_FragCoord.y<700) color_out=vec4(1,0,0,1);"
+        //"   if(gl_FragCoord.x>880&&gl_FragCoord.x<1270) color_out=vec4(1,0,0,1);"
         "   player_out = hatched;\n"
         "   model_out = model_color;\n"
 		"}\n"
@@ -447,6 +449,7 @@ SceneProgram::SceneProgram() {
     glUniform1i(glGetUniformLocation(program, "hatch4_tex"), 6);
     glUniform1i(glGetUniformLocation(program, "hatch5_tex"), 7);
     glUniform1i(glGetUniformLocation(program, "model_tex"), 8);
+    glUniform1i(glGetUniformLocation(program, "text_tex"), 9);
 
 	glUniform1i(tex_sampler2D, 0);
 

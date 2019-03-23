@@ -14,9 +14,6 @@ class Primitive{
 
 
 struct Game {
-
     Primitive primitives[10];
-
-//	void update(float time, char playerNum);
-
+    int prim_num = 0;
 };

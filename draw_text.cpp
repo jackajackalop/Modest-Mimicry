@@ -1,6 +1,5 @@
 #include "draw_text.hpp"
 
-#include "GL.hpp"
 #include "Load.hpp"
 #include "MeshBuffer.hpp"
 #include "data_path.hpp"
@@ -60,9 +59,8 @@ Load< GLuint > text_meshes_for_text_program(LoadTagDefault, [](){
 });
 
 //----------------------
-
-
-void draw_text(std::string const &text, glm::vec2 const &anchor, float height, glm::vec4 color) {
+void draw_text(std::string const &text, glm::vec2 const &anchor, float height,
+        glm::vec4 color) {
 	GLint viewport[4];
 	glGetIntegerv(GL_VIEWPORT, viewport);
 	float aspect = viewport[2] / float(viewport[3]);

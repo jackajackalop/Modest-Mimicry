@@ -31,16 +31,20 @@ struct GameMode : public Mode {
 
 	//draw is called after update:
 	virtual void draw(glm::uvec2 const &drawable_size) override;
-    void draw_scene(GLuint* color_tex, GLuint* depth_tex, GLuint*player_tex,
-            GLuint* model_tex);
+    void draw_scene(GLuint text_tex, GLuint* color_tex, GLuint* depth_tex,
+            GLuint*player_tex, GLuint* model_tex);
     void compare(GLuint player_tex, GLuint model_tex);
     void add_primitive(int primitive_type);
     void set_prim_uniforms();
+    void reset();
+    void show_lose();
+    void show_win();
 
 	float camera_spin = 0.0f;
 	float spot_spin = 0.0f;
     int level = 0;
-    int score = 0;
+    int score1 = 0;
+    int score2 = 0;
     int selected = 0;
     char playerNum;
 	//------ networking ------

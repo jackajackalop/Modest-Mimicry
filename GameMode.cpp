@@ -159,9 +159,10 @@ Scene::Camera *camera = nullptr;
 //Scene::Lamp *spot = nullptr;
 
 int width =0, height =0;
-float elapsed_time = 0.0f;
+float time_left = 2.0;
 int edit_mode = 0; //0 for translation, 1 for rotation, 2 for scaling
-int prim_num = 0;
+bool updated = false;
+bool paused = false;
 Game state1, state2;
 
 Load< Scene > scene(LoadTagDefault, [](){
@@ -249,10 +250,11 @@ GameMode::~GameMode() {
 }
 
 void GameMode::add_primitive(int primitive_type){
+    if(state1.prim_num>=10) return;
     Primitive new_prim;
     new_prim.shape = primitive_type;
-    state1.primitives[prim_num] = new_prim;
-    prim_num++;
+    state1.primitives[state1.prim_num] = new_prim;
+    state1.prim_num++;
     std::cout<<"added"<<std::endl;
 }
 
@@ -260,8 +262,7 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	//ignore any keys that are the result of automatic key repeat:
 
     if (evt.type == SDL_KEYDOWN) {
-        if (evt.key.keysym.scancode == SDL_SCANCODE_SPACE)
-            std::cout<<score<<std::endl;
+        updated = true;
 
         if (evt.key.keysym.scancode == SDL_SCANCODE_T){
             edit_mode = 0; //translation
@@ -273,10 +274,10 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
         if (evt.key.keysym.scancode == SDL_SCANCODE_LEFT){
             selected = selected-1;
-            if(selected<0) selected = prim_num-1;
+            if(selected<0) selected = state1.prim_num-1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_RIGHT){
             selected = selected+1;
-            if(selected>=prim_num) selected = 0;
+            if(selected>=state1.prim_num) selected = 0;
         }
 
         if (evt.key.keysym.scancode == SDL_SCANCODE_1) {
@@ -324,9 +325,20 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 }
 
 void GameMode::update(float elapsed) {
+    if(paused) return;
 	camera_parent_transform->rotation = glm::angleAxis(camera_spin, glm::vec3(0.0f, 0.0f, 1.0f));
 //	spot_parent_transform->rotation = glm::angleAxis(spot_spin, glm::vec3(0.0f, 0.0f, 1.0f));
-    elapsed_time+=elapsed;
+    time_left-=elapsed;
+    if(time_left<=0.0){
+        if(score1>score2){
+            if(playerNum==0) show_win();
+            else show_lose();
+        }else{
+            if(playerNum==0) show_lose();
+            else show_win();
+        }
+    }
+
     if (client.connection) {
         //send game state to server:
         client.connection.send_raw("a", 1);
@@ -372,6 +384,7 @@ struct Textures {
 	GLuint depth_tex = 0;
     GLuint player_tex = 0;
     GLuint model_tex = 0;
+    GLuint text_tex = 0;
 	void allocate(glm::uvec2 const &new_size) {
     //allocate full-screen framebuffer:
 
@@ -395,14 +408,15 @@ struct Textures {
             alloc_tex(&depth_tex, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT);
             alloc_tex(&player_tex, GL_RGBA, GL_RGBA);
             alloc_tex(&model_tex, GL_RGBA, GL_RGBA);
+            alloc_tex(&text_tex, GL_RGBA, GL_RGBA);
 			GL_ERRORS();
 		}
 
 	}
 } textures;
 
-void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_,
-        GLuint* player_tex_, GLuint* model_tex_){
+void GameMode::draw_scene(GLuint text_tex, GLuint* color_tex_,
+        GLuint* depth_tex_, GLuint* player_tex_, GLuint* model_tex_){
     assert(color_tex_);
     assert(depth_tex_);
     assert(player_tex_);
@@ -449,7 +463,7 @@ void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_,
 
 	glUseProgram(scene_program->program);
 
-    glUniform1f(scene_program->time, elapsed_time);
+    glUniform1f(scene_program->time, time_left);
     glUniform3fv(scene_program->viewPos, 1,
             glm::value_ptr(camera->transform->make_local_to_world()));
 
@@ -461,12 +475,14 @@ void GameMode::draw_scene(GLuint* color_tex_, GLuint* depth_tex_,
     else if(level==3) level_tex = *level3_tex;
     else if(level==4) level_tex = *level4_tex;
     scene->draw(camera, *bg_tex, *hatch0_tex, *hatch1_tex, *hatch2_tex,
-            *hatch3_tex, *hatch4_tex, *hatch5_tex, level_tex);
+            *hatch3_tex, *hatch4_tex, *hatch5_tex, level_tex, text_tex);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     GL_ERRORS();
 }
 
 void GameMode::compare(GLuint player_tex, GLuint model_tex){
+    updated = false;
+
     glBindTexture(GL_TEXTURE_2D, player_tex);
     GLuint *p_pixels = new GLuint[width*height*4];
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_INT, p_pixels);
@@ -491,6 +507,21 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
             }
         }
     }
+    int p2_xoffset = width;
+    int p2_yoffset = height;
+    int p2_xend = 0;
+    int p2_yend = 0;
+    for(int i = 0.25*height; i<0.85*height; i++){
+        for(int j = 0.688*width; j<0.99*width; j++){
+            int index = (j+i*width)*4;
+            if((p_pixels[index]&0xFF)>0){
+                p2_xoffset = glm::min(p2_xoffset, j);
+                p2_yoffset = glm::min(p2_yoffset, i);
+                p2_xend = glm::max(p2_xend, j);
+                p2_yend = glm::max(p2_yend, i);
+            }
+        }
+    }
     //std::cout<<p_xoffset<<" "<<p_xend<<std::endl;
  //   std::cout<<p_yoffset<<" "<<p_yend<<std::endl;
 
@@ -512,7 +543,7 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
     //std::cout<<m_xoffset<<" "<<m_xend<<std::endl;
     //std::cout<<m_yoffset<<" "<<m_yend<<std::endl;
 
-    score = 0;
+    score1 = 0;
     int max_score = 1;
     float p_xscale = (float)(p_xend-p_xoffset)/(float)(m_xend-m_xoffset);
     float p_yscale = (float)(p_yend-p_yoffset)/(float)(m_yend-m_yoffset);
@@ -530,18 +561,37 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
             if(m_color>0)
                 max_score++;
             if(m_color>0 && p_color>0)
-                score++;
+                score1++;
         }
     }
-    score = score*200/max_score;
-    score = glm::clamp(score, 0, 100);
+    score1 = score1*200/max_score;
+    score1 = glm::clamp(score1, 0, 100);
+
+    p_xscale = (float)(p2_xend-p2_xoffset)/(float)(m_xend-m_xoffset);
+    p_yscale = (float)(p2_yend-p2_yoffset)/(float)(m_yend-m_yoffset);
+
+    iend = glm::min(m_yend-m_yoffset, p2_yend-p2_yoffset);
+    jend = glm::min(m_xend-m_xoffset, p2_xend-p2_xoffset);
+    for(int i = 0; i<iend; i++){
+        for(int j = 0; j<jend; j++){
+            int mi = (m_yoffset+i)*4, mj = (m_xoffset+j)*4;
+            int pi = (p2_yoffset+i*p_yscale)*4, pj = (p2_xoffset+j*p_xscale)*4;
+            int m_index = mj+mi*width;
+            int p_index = pj+pi*width;
+            int m_color = (m_pixels[m_index]&0xFF00>>8);
+            int p_color = (p_pixels[p_index]&0xFF00>>8);
+            if(m_color>0 && p_color>0)
+                score2++;
+        }
+    }
+    score2 = score2*200/max_score;
+    score2 = glm::clamp(score2, 0, 100);
 
     delete[] p_pixels;
     delete[] m_pixels;
 }
 
 void GameMode::set_prim_uniforms(){
-    //int n = state1.primitives.size();
     int prim10[10];
     float posX10[10];
     float posY10[10];
@@ -550,7 +600,6 @@ void GameMode::set_prim_uniforms(){
     float rotY10[10];
     float rotZ10[10];
     float scale10[10];
-    //int nb = state2.primitives.size();
     int prim10b[10];
     float posX10b[10];
     float posY10b[10];
@@ -561,7 +610,7 @@ void GameMode::set_prim_uniforms(){
     float scale10b[10];
     //std::cout<<n<<" "<<nb<<std::endl;
     for(int i = 0; i<10; i++){
-    //    if(i<n){
+        if(i<state1.prim_num){
             prim10[i] = state1.primitives[i].shape;
             posX10[i] = state1.primitives[i].position.x;
             posY10[i] = state1.primitives[i].position.y;
@@ -570,6 +619,8 @@ void GameMode::set_prim_uniforms(){
             rotY10[i] = state1.primitives[i].rotation.y;
             rotZ10[i] = state1.primitives[i].rotation.z;
             scale10[i] = state1.primitives[i].scale;
+        }
+        if(i<state2.prim_num){
             prim10b[i] = state2.primitives[i].shape;
             posX10b[i] = state2.primitives[i].position.x;
             posY10b[i] = state2.primitives[i].position.y;
@@ -578,6 +629,7 @@ void GameMode::set_prim_uniforms(){
             rotY10b[i] = state2.primitives[i].rotation.y;
             rotZ10b[i] = state2.primitives[i].rotation.z;
             scale10b[i] = state2.primitives[i].scale;
+        }
     }
     glUniform1iv(scene_program->primitives, 10, prim10);
     glUniform1fv(scene_program->positionsX, 10, posX10);
@@ -602,9 +654,35 @@ void GameMode::set_prim_uniforms(){
 void GameMode::draw(glm::uvec2 const &drawable_size) {
 	textures.allocate(drawable_size);
 
-    draw_scene(&textures.color_tex, &textures.depth_tex, &textures.player_tex,
-            &textures.model_tex);
-    compare(textures.player_tex, textures.model_tex);
+    {//draw score and timer
+		glDisable(GL_DEPTH_TEST);
+        std::string message = "SCORE"+std::to_string(score1);
+		float height = 0.05f;
+        static GLuint fb = 0;
+        if(fb==0) glGenFramebuffers(1, &fb);
+        glBindFramebuffer(GL_FRAMEBUFFER, fb);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                GL_TEXTURE_2D, textures.text_tex, 0);
+
+        {
+            GLenum bufs[1] = {GL_COLOR_ATTACHMENT0};
+            glDrawBuffers(1, bufs);
+        }
+        check_fb();
+
+        GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+        glClearBufferfv(GL_COLOR, 0, black);
+		draw_text(message, glm::vec2(-1.0,-0.58), height);
+        message = "SCORE "+std::to_string(score2);
+		draw_text(message, glm::vec2(1.0,-0.58), height);
+        message = "TIME "+std::to_string(int(time_left));
+        height = 0.1;
+		draw_text(message, glm::vec2(-0.2, 0.8), height);
+    }
+    draw_scene(textures.text_tex, &textures.color_tex, &textures.depth_tex,
+            &textures.player_tex, &textures.model_tex);
+    if(updated) compare(textures.player_tex, textures.model_tex);
+
     glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glActiveTexture(GL_TEXTURE0);
@@ -628,3 +706,61 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
+
+void GameMode::reset(){
+    time_left = 2.0;
+    edit_mode = 0; //0 for translation, 1 for rotation, 2 for scaling
+    state1.prim_num = 0;
+    state2.prim_num = 0;
+    updated = false;
+    paused = false;
+    score1 = 0;
+    score2 = 0;
+    selected = 0;
+}
+
+void GameMode::show_lose() {
+	std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
+
+	std::shared_ptr< Mode > game = shared_from_this();
+	menu->background = game;
+
+	menu->choices.emplace_back("YOU LOST");
+    menu->choices.emplace_back("CONTINUE", [this, game](){
+				level++;
+                reset();
+				Mode::set_current(game);
+			});
+	menu->choices.emplace_back("QUIT", [](){
+			Mode::set_current(nullptr);
+			});
+
+	menu->selected = 2;
+	paused = true;
+
+	Mode::set_current(menu);
+}
+
+void GameMode::show_win() {
+    std::cout<<"FKDSLFJLDSFL"<<std::endl;
+	std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
+
+	std::shared_ptr< Mode > game = shared_from_this();
+	menu->background = game;
+
+	menu->choices.emplace_back("YOU WON");
+	menu->choices.emplace_back("CONTINUE", [this, game](){
+				level++;
+                reset();
+				Mode::set_current(game);
+			});
+    menu->choices.emplace_back("QUIT", [](){
+			Mode::set_current(nullptr);
+			});
+
+	menu->selected = 1;
+	paused = true;
+
+	Mode::set_current(menu);
+}
+
