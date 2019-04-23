@@ -175,7 +175,17 @@ Scene::Camera *Scene::new_camera(Scene::Transform *transform) {
 void Scene::delete_camera(Scene::Camera *object) {
 	list_delete< Scene::Camera >(object);
 }
-GLuint bg, hatch0, hatch1, hatch2, hatch3, hatch4, hatch5, level, text;
+//GLuint bg, hatch0, hatch1, hatch2, hatch3, hatch4, hatch5, level, text;
+
+void Scene::draw(Scene::Camera const *camera, Object::ProgramType program_type) const {
+	assert(camera && "Must have a camera to draw scene from.");
+	assert(program_type < Object::ProgramTypes);
+
+	glm::mat4 world_to_camera = camera->transform->make_world_to_local();
+	glm::mat4 world_to_clip = camera->make_projection() * world_to_camera;
+
+	draw(world_to_clip, program_type);
+}
 
 void Scene::draw(Scene::Camera const *camera, GLuint bg_tex, GLuint hatch0_tex,
         GLuint hatch1_tex, GLuint hatch2_tex, GLuint hatch3_tex,
@@ -187,7 +197,7 @@ void Scene::draw(Scene::Camera const *camera, GLuint bg_tex, GLuint hatch0_tex,
 	glm::mat4 world_to_camera = camera->transform->make_world_to_local();
 	glm::mat4 world_to_clip = camera->make_projection() * world_to_camera;
 
-    bg = bg_tex;
+  /*  bg = bg_tex;
     hatch0 = hatch0_tex;
     hatch1 = hatch1_tex;
     hatch2 = hatch2_tex;
@@ -195,7 +205,7 @@ void Scene::draw(Scene::Camera const *camera, GLuint bg_tex, GLuint hatch0_tex,
     hatch4 = hatch4_tex;
     hatch5 = hatch5_tex;
     level = level_tex;
-    text = text_tex;
+    text = text_tex;*/
 	draw(world_to_clip, program_type);
 }
 
@@ -251,7 +261,7 @@ void Scene::draw(glm::mat4 const &world_to_clip, Object::ProgramType program_typ
 				glBindTexture(GL_TEXTURE_2D, info.textures[i]);
 			}
 		}
-        glActiveTexture(GL_TEXTURE1);
+   /*     glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, bg);
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, hatch0);
@@ -269,7 +279,7 @@ void Scene::draw(glm::mat4 const &world_to_clip, Object::ProgramType program_typ
         glBindTexture(GL_TEXTURE_2D, level);
         glActiveTexture(GL_TEXTURE9);
         glBindTexture(GL_TEXTURE_2D, text);
-
+*/
 	    glBindVertexArray(info.vao);
 
 		//draw the object:

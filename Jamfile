@@ -69,7 +69,9 @@ CLIENT_NAMES =
 	main
 	data_path
 	compile_program
+    main_program
     scene_program
+    surface_program
     depth_program
 	vertex_color_program
 	Scene

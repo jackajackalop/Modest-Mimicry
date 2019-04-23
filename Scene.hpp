@@ -187,6 +187,9 @@ struct Scene {
         GLuint hatch4_tex, GLuint hatch5_tex, GLuint level_tex,
         GLuint text_tex,
         Object::ProgramType = Object::ProgramTypeDefault ) const;
+    void draw(Camera const *camera,
+        Object::ProgramType = Object::ProgramTypeDefault ) const;
+
 
 	//Draw the scene from a given lamp by computing appropriate matrices and sending all objects to OpenGL:
 	//"lamp" must be non-null!

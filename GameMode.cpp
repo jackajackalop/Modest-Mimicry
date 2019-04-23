@@ -12,6 +12,8 @@
 #include "draw_text.hpp" //helper to... um.. draw text
 #include "load_save_png.hpp"
 #include "scene_program.hpp"
+#include "main_program.hpp"
+#include "surface_program.hpp"
 #include "depth_program.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -101,7 +103,7 @@ Load< GLuint > wood_tex(LoadTagDefault, [](){
 Load< GLuint > marble_tex(LoadTagDefault, [](){
 	return new GLuint(load_texture(data_path("textures/marble.png")));
 });
-Load< GLuint > bg_tex(LoadTagDefault, [](){
+Load< GLuint > bg(LoadTagDefault, [](){
 	return new GLuint(load_texture(data_path("textures/bg.png")));
 });
 Load< GLuint > hatch0_tex(LoadTagDefault, [](){
@@ -391,6 +393,7 @@ struct Textures {
 	glm::uvec2 size = glm::uvec2(0,0); //remember the size of the framebuffer
 
 	GLuint color_tex = 0;
+    GLuint bg_tex = 0;
     GLuint hatched_tex = 0;
 	GLuint depth_tex = 0;
     GLuint player_tex = 0;
@@ -400,7 +403,6 @@ struct Textures {
     //allocate full-screen framebuffer:
 
 		if (size != new_size) {
-            std::cout<<new_size.x<<std::endl;
 			size = new_size;
 
             auto alloc_tex = [this](GLuint *tex, GLint internalformat, GLint format){
@@ -416,6 +418,7 @@ struct Textures {
             };
 
             alloc_tex(&color_tex, GL_RGBA, GL_RGBA);
+            alloc_tex(&bg_tex, GL_RGBA, GL_RGBA);
             alloc_tex(&hatched_tex, GL_RGBA, GL_RGBA);
             alloc_tex(&depth_tex, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT);
             alloc_tex(&player_tex, GL_RGBA, GL_RGBA);
@@ -427,16 +430,63 @@ struct Textures {
 	}
 } textures;
 
-void GameMode::draw_scene(GLuint text_tex, GLuint* color_tex_,
-        GLuint* depth_tex_, GLuint* player_tex_, GLuint* model_tex_){
-    assert(color_tex_);
-    assert(depth_tex_);
-    assert(player_tex_);
-    assert(model_tex_);
-    auto &color_tex = *color_tex_;
-    auto &depth_tex = *depth_tex_;
-    auto &player_tex = *player_tex_;
+void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_){
+    auto &bg_tex = *bg_tex_;
     auto &model_tex = *model_tex_;
+
+    static GLuint fb = 0;
+    if(fb==0) glGenFramebuffers(1, &fb);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+            bg_tex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+            model_tex, 0);
+    GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    glDrawBuffers(2, bufs);
+    check_fb();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, fb);
+	glViewport(0,0, textures.size.x, textures.size.y);
+	camera->aspect = textures.size.x / float(textures.size.y);
+
+    GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    glClearBufferfv(GL_COLOR, 0, black);
+
+	//set up basic OpenGL state:
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    GLuint level_tex = 0;
+    if(level==0) level_tex= *level0_tex;
+    else if(level==1) level_tex = *level1_tex;
+    else if(level==2) level_tex = *level2_tex;
+    else if(level==3) level_tex = *level3_tex;
+    else if(level==4) level_tex = *level4_tex;
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, *bg);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, level_tex);
+
+	glUseProgram(surface_program->program);
+    glUniform1i(surface_program->width, width);
+    glUniform1i(surface_program->height, height);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+}
+
+void GameMode::draw_main(GLuint text_tex, GLuint bg_tex, GLuint model_tex,
+        GLuint* color_tex_, GLuint* player_tex_){
+    assert(color_tex_);
+    assert(player_tex_);
+    auto &color_tex = *color_tex_;
+    auto &player_tex = *player_tex_;
 
     static GLuint fb = 0;
     if(fb==0) glGenFramebuffers(1, &fb);
@@ -445,22 +495,14 @@ void GameMode::draw_scene(GLuint text_tex, GLuint* color_tex_,
                             color_tex, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
                             player_tex, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
-                            model_tex, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
-                            depth_tex, 0);
-    GLenum bufs[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
-        GL_COLOR_ATTACHMENT2};
-    glDrawBuffers(3, bufs);
+    GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    glDrawBuffers(2, bufs);
     check_fb();
 
-
 	//Draw scene to off-screen framebuffer:
+    glBindFramebuffer(GL_FRAMEBUFFER, fb);
 	glViewport(0,0, textures.size.x, textures.size.y);
-    width = textures.size.x;
-    height = textures.size.y;
-
-	camera->aspect = textures.size.x / float(textures.size.y);
+    camera->aspect = textures.size.x / float(textures.size.y);
 
     GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     glClearBufferfv(GL_COLOR, 0, black);
@@ -473,21 +515,28 @@ void GameMode::draw_scene(GLuint text_tex, GLuint* color_tex_,
 	glBlendEquation(GL_FUNC_ADD);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glUseProgram(scene_program->program);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, bg_tex);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, *hatch0_tex);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, *hatch1_tex);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, *hatch2_tex);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, *hatch3_tex);
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, *hatch4_tex);
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, *hatch5_tex);
+    glActiveTexture(GL_TEXTURE7);
+    glBindTexture(GL_TEXTURE_2D, model_tex);
+    glActiveTexture(GL_TEXTURE8);
+    glBindTexture(GL_TEXTURE_2D, text_tex);
 
-    glUniform3fv(scene_program->viewPos, 1,
-            glm::value_ptr(camera->transform->make_local_to_world()));
-
+    glUseProgram(main_program->program);
     set_prim_uniforms();
-    GLuint level_tex = 0;
-    if(level==0) level_tex= *level0_tex;
-    else if(level==1) level_tex = *level1_tex;
-    else if(level==2) level_tex = *level2_tex;
-    else if(level==3) level_tex = *level3_tex;
-    else if(level==4) level_tex = *level4_tex;
-    scene->draw(camera, *bg_tex, *hatch0_tex, *hatch1_tex, *hatch2_tex,
-            *hatch3_tex, *hatch4_tex, *hatch5_tex, level_tex, text_tex);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
     GL_ERRORS();
 }
 
@@ -615,25 +664,25 @@ void GameMode::set_prim_uniforms(){
             scale10b[i] = state2.primitives[i].scale;
         }
     }
-    glUniform1iv(scene_program->primitives, 10, prim10);
-    glUniform1fv(scene_program->positionsX, 10, posX10);
-    glUniform1fv(scene_program->positionsY, 10, posY10);
-    glUniform1fv(scene_program->positionsZ, 10, posZ10);
-    glUniform1fv(scene_program->rotationsX, 10, rotX10);
-    glUniform1fv(scene_program->rotationsY, 10, rotY10);
-    glUniform1fv(scene_program->rotationsZ, 10, rotZ10);
-    glUniform1fv(scene_program->scales, 10, scale10);
-    glUniform1i(scene_program->selected, selected);
-    glUniform1iv(scene_program->primitivesb, 10, prim10b);
-    glUniform1fv(scene_program->positionsXb, 10, posX10b);
-    glUniform1fv(scene_program->positionsYb, 10, posY10b);
-    glUniform1fv(scene_program->positionsZb, 10, posZ10b);
-    glUniform1fv(scene_program->rotationsXb, 10, rotX10b);
-    glUniform1fv(scene_program->rotationsYb, 10, rotY10b);
-    glUniform1fv(scene_program->rotationsZb, 10, rotZ10b);
-    glUniform1fv(scene_program->scalesb, 10, scale10b);
-    glUniform1i(scene_program->width, width);
-    glUniform1i(scene_program->height, height);
+    glUniform1iv(main_program->primitives, 10, prim10);
+    glUniform1fv(main_program->positionsX, 10, posX10);
+    glUniform1fv(main_program->positionsY, 10, posY10);
+    glUniform1fv(main_program->positionsZ, 10, posZ10);
+    glUniform1fv(main_program->rotationsX, 10, rotX10);
+    glUniform1fv(main_program->rotationsY, 10, rotY10);
+    glUniform1fv(main_program->rotationsZ, 10, rotZ10);
+    glUniform1fv(main_program->scales, 10, scale10);
+    glUniform1i(main_program->selected, selected);
+    glUniform1iv(main_program->primitivesb, 10, prim10b);
+    glUniform1fv(main_program->positionsXb, 10, posX10b);
+    glUniform1fv(main_program->positionsYb, 10, posY10b);
+    glUniform1fv(main_program->positionsZb, 10, posZ10b);
+    glUniform1fv(main_program->rotationsXb, 10, rotX10b);
+    glUniform1fv(main_program->rotationsYb, 10, rotY10b);
+    glUniform1fv(main_program->rotationsZb, 10, rotZ10b);
+    glUniform1fv(main_program->scalesb, 10, scale10b);
+    glUniform1i(main_program->width, width);
+    glUniform1i(main_program->height, height);
 }
 
 void GameMode::draw(glm::uvec2 const &drawable_size) {
@@ -663,8 +712,16 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
         height = 0.1;
 		draw_text(message, glm::vec2(-0.2, 0.8), height);
     }
-    draw_scene(textures.text_tex, &textures.color_tex, &textures.depth_tex,
-            &textures.player_tex, &textures.model_tex);
+    width = textures.size.x;
+    height = textures.size.y;
+
+    glUseProgram(scene_program->program);
+    glUniform3fv(scene_program->viewPos, 1,
+            glm::value_ptr(camera->transform->make_local_to_world()));
+    scene->draw(camera);
+    draw_surface(&textures.bg_tex, &textures.model_tex);
+    draw_main(textures.text_tex, textures.bg_tex, textures.model_tex,
+            &textures.color_tex, &textures.player_tex);
     if(updated) compare(textures.player_tex, textures.model_tex);
 
     glActiveTexture(GL_TEXTURE1);
