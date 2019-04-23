@@ -400,6 +400,7 @@ struct Textures {
     //allocate full-screen framebuffer:
 
 		if (size != new_size) {
+            std::cout<<new_size.x<<std::endl;
 			size = new_size;
 
             auto alloc_tex = [this](GLuint *tex, GLint internalformat, GLint format){
@@ -631,12 +632,12 @@ void GameMode::set_prim_uniforms(){
     glUniform1fv(scene_program->rotationsYb, 10, rotY10b);
     glUniform1fv(scene_program->rotationsZb, 10, rotZ10b);
     glUniform1fv(scene_program->scalesb, 10, scale10b);
-
+    glUniform1i(scene_program->width, width);
+    glUniform1i(scene_program->height, height);
 }
 
 void GameMode::draw(glm::uvec2 const &drawable_size) {
 	textures.allocate(drawable_size);
-
     {//draw score and timer
 		glDisable(GL_DEPTH_TEST);
         std::string message ="SCORE"+std::to_string(playerNum=='0'?state1.score:state2.score);

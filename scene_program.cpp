@@ -30,6 +30,8 @@ SceneProgram::SceneProgram() {
         "uniform sampler2D hatch5_tex;\n"
         "uniform sampler2D model_tex; \n"
         "uniform sampler2D text_tex; \n"
+        "uniform int width;\n"
+        "uniform int height;\n"
 
         "uniform int primitives[10];\n"
         "uniform float positionsX[10];\n"
@@ -382,7 +384,7 @@ SceneProgram::SceneProgram() {
         "} \n"
 
 		"void main() {\n"
-        "   vec2 resolution = textureSize(tex, 0)*2.0; \n"
+        "   vec2 resolution = vec2(width, height);\n"
         "   vec3 ro = vec3( 3.0, -.45, 0.0); \n"
         "   vec3 ta = vec3( -1.0, 0.0, 0.0);\n"
         // camera-to-world transformation
@@ -397,13 +399,17 @@ SceneProgram::SceneProgram() {
 		// gamma
         "   col = pow( col, vec3(0.4545) );\n"
         "   tot += col; \n"
-        "   vec4 model_color = texelFetch(model_tex, ivec2(gl_FragCoord.xy*vec2(2.5,2))-ivec2(1300,810),0);\n"
-        "   vec4 bg_color = texelFetch(bg_tex, ivec2(vec2(1.7, 2)*gl_FragCoord.xy), 0)\n;"
+
+        "   vec2 model_size = textureSize(model_tex, 0); \n"
+        "   vec2 model_coord = gl_FragCoord.xy*vec2(2.5,2)-vec2(1.08*width, 1.01*height); \n"
+        "   vec4 model_color = texelFetch(model_tex, ivec2(model_coord),0);\n"
+        //"   vec4 bg_color = texelFetch(bg_tex, ivec2(vec2(1.7, 2)*gl_FragCoord.xy), 0)\n;"
+//        "   vec4 bg_color = texture(bg_tex, gl_FragCoord.xy, 0); \n"
         "   vec4 text_color = texelFetch(text_tex, ivec2(gl_FragCoord.xy), 0); \n"
         "   vec4 shaded = vec4(tot, 1.0);\n"
         "   vec4 hatched = (text_color.r!=0?text_color:shade(shaded)); \n"
         "   if(hatched!=vec4(0,0,0,1)) color_out = hatched; \n"
-        "   else color_out=(model_color.r>0.2?model_color:bg_color);\n"
+        "   else color_out=model_color;\n"//(model_color.r>0.2?model_color:bg_color);\n"
         //"   if(gl_FragCoord.x>880&&gl_FragCoord.x<1270) color_out=vec4(1,0,0,1);"
         "   player_out = hatched;\n"
         "   model_out = model_color;\n"
@@ -432,6 +438,8 @@ SceneProgram::SceneProgram() {
 	rotationsYb = glGetUniformLocation(program, "rotationsYb");
 	rotationsZb = glGetUniformLocation(program, "rotationsZb");
     scalesb = glGetUniformLocation(program, "scalesb");
+    width = glGetUniformLocation(program, "width");
+    height = glGetUniformLocation(program, "height");
 
 	glUseProgram(program);
 
