@@ -157,9 +157,9 @@ MainProgram::MainProgram() {
         "           else if(primitives[i]==2) \n"
         "               res = opSU(res,vec2(sdBox(p-position,vec3(0.25*scale)),color));\n"
         "           else if(primitives[i]==3) \n"
-	    "               res = opSU(res,vec2(sdCone(p-position,vec3(0.8,0.4,0.4)*scale),color)); \n"
+   	"               res = opSU(res,vec2(sdCone(p-position,vec3(0.8,0.4,0.4)*scale),color)); \n"
         "           else if(primitives[i]==4) \n"
-   	    "               res = opSU(res,vec2(sdCylinder(p-position,vec2(0.1,0.2)*scale ),color));\n"
+       	"               res = opSU(res,vec2(sdCylinder(p-position,vec2(0.1,0.2)*scale ),color));\n"
         "       } \n"
         "       if(primitivesb[i]>0){ \n"
         "           vec3 position = vec3(positionsXb[i], positionsYb[i], positionsZb[i]); \n"
@@ -391,7 +391,7 @@ MainProgram::MainProgram() {
         "   vec3 rd = ca * normalize( vec3(p.xy,2.0) ); \n"
         // render
         "   vec3 col = render( ro, rd ); \n"
-		// gamma
+	// gamma
         "   col = pow( col, vec3(0.4545) );\n"
         "   tot += col; \n"
 
@@ -401,11 +401,11 @@ MainProgram::MainProgram() {
         "   vec4 bg_color = texelFetch(bg_tex, ivec2(gl_FragCoord.xy), 0)\n;"
         "   vec4 text_color = texelFetch(text_tex, ivec2(gl_FragCoord.xy), 0); \n"
         "   vec4 shaded = vec4(tot, 1.0);\n"
-        "   vec4 hatched = (text_color.r>0.1 ?text_color:shade(shaded)); \n"
+        "   vec4 hatched = text_color+shade(shaded);\n"//(text_color.r>0.1 ?text_color:shade(shaded)); \n"
         "   if(hatched!=vec4(0,0,0,1)) color_out = hatched; \n"
         "   else color_out= (model_color.r>0.2?model_color:bg_color);\n"
         //"   if(gl_FragCoord.x>880&&gl_FragCoord.x<1270) color_out=vec4(1,0,0,1);"
-        "   player_out = hatched;\n"
+        "   player_out = shaded;\n"
 		"}\n"
 	);
 	glUseProgram(program);

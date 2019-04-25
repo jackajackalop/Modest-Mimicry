@@ -25,135 +25,135 @@
 #include <random>
 
 Load< MeshBuffer > meshes(LoadTagDefault, [](){
-	return new MeshBuffer(data_path("test.pgct"));
-});
+        return new MeshBuffer(data_path("test.pgct"));
+        });
 
 Load< GLuint > meshes_for_scene_program(LoadTagDefault, [](){
-	return new GLuint(meshes->make_vao_for_program(scene_program->program));
-});
+        return new GLuint(meshes->make_vao_for_program(scene_program->program));
+        });
 
 Load< GLuint > meshes_for_depth_program(LoadTagDefault, [](){
-	return new GLuint(meshes->make_vao_for_program(depth_program->program));
-});
+        return new GLuint(meshes->make_vao_for_program(depth_program->program));
+        });
 
 //used for fullscreen passes:
 Load< GLuint > empty_vao(LoadTagDefault, [](){
-	GLuint vao = 0;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	glBindVertexArray(0);
-	return new GLuint(vao);
-});
+        GLuint vao = 0;
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+        glBindVertexArray(0);
+        return new GLuint(vao);
+        });
 
 Load< GLuint > copy_program(LoadTagDefault, [](){
-	GLuint program = compile_program(
-		//this draws a triangle that covers the entire screen:
-		"#version 330\n"
-		"void main() {\n"
-		"	gl_Position = vec4(4 * (gl_VertexID & 1) - 1,  2 * (gl_VertexID & 2) - 1, 0.0, 1.0);\n"
-		"}\n"
-		,
-		//NOTE on reading screen texture:
-		//texelFetch() gives direct pixel access with integer coordinates, but accessing out-of-bounds pixel is undefined:
-		//	vec4 color = texelFetch(tex, ivec2(gl_FragCoord.xy), 0);
-		//texture() requires using [0,1] coordinates, but handles out-of-bounds more gracefully (using wrap settings of underlying texture):
-		//	vec4 color = texture(tex, gl_FragCoord.xy / textureSize(tex,0));
+        GLuint program = compile_program(
+                //this draws a triangle that covers the entire screen:
+                "#version 330\n"
+                "void main() {\n"
+                "    gl_Position = vec4(4 * (gl_VertexID & 1) - 1,  2 * (gl_VertexID & 2) - 1, 0.0, 1.0);\n"
+                "}\n"
+                ,
+                //NOTE on reading screen texture:
+                //texelFetch() gives direct pixel access with integer coordinates, but accessing out-of-bounds pixel is undefined:
+                //    vec4 color = texelFetch(tex, ivec2(gl_FragCoord.xy), 0);
+                //texture() requires using [0,1] coordinates, but handles out-of-bounds more gracefully (using wrap settings of underlying texture):
+                //    vec4 color = texture(tex, gl_FragCoord.xy / textureSize(tex,0));
 
-		"#version 330\n"
-		"uniform sampler2D tex;\n"
-		"out vec4 fragColor;\n"
-		"void main() {\n"
-		"	fragColor = texelFetch(tex, ivec2(gl_FragCoord.xy), 0);\n"
-		"}\n"
-	);
+                "#version 330\n"
+                "uniform sampler2D tex;\n"
+                "out vec4 fragColor;\n"
+                "void main() {\n"
+                "    fragColor = texelFetch(tex, ivec2(gl_FragCoord.xy), 0);\n"
+                "}\n"
+                );
 
-	glUseProgram(program);
+        glUseProgram(program);
 
-	glUniform1i(glGetUniformLocation(program, "tex"), 0);
+        glUniform1i(glGetUniformLocation(program, "tex"), 0);
 
-	glUseProgram(0);
+        glUseProgram(0);
 
-	return new GLuint(program);
+        return new GLuint(program);
 });
 
 
 GLuint load_texture(std::string const &filename) {
-	glm::uvec2 size;
-	std::vector< glm::u8vec4 > data;
-	load_png(filename, &size, &data, LowerLeftOrigin);
+    glm::uvec2 size;
+    std::vector< glm::u8vec4 > data;
+    load_png(filename, &size, &data, LowerLeftOrigin);
 
-	GLuint tex = 0;
-	glGenTextures(1, &tex);
-	glBindTexture(GL_TEXTURE_2D, tex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	GL_ERRORS();
+    GLuint tex = 0;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    GL_ERRORS();
 
-	return tex;
+    return tex;
 }
 Load< GLuint > wood_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/grid.png")));
-});
+        return new GLuint(load_texture(data_path("textures/grid.png")));
+        });
 
 Load< GLuint > marble_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/marble.png")));
-});
+        return new GLuint(load_texture(data_path("textures/marble.png")));
+        });
 Load< GLuint > bg(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/bg.png")));
-});
+        return new GLuint(load_texture(data_path("textures/bg.png")));
+        });
 Load< GLuint > hatch0_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/hatch_0.png")));
-});
+        return new GLuint(load_texture(data_path("textures/hatch_0.png")));
+        });
 Load< GLuint > hatch1_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/hatch_1.png")));
-});
+        return new GLuint(load_texture(data_path("textures/hatch_1.png")));
+        });
 Load< GLuint > hatch2_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/hatch_2.png")));
-});
+        return new GLuint(load_texture(data_path("textures/hatch_2.png")));
+        });
 Load< GLuint > hatch3_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/hatch_3.png")));
-});
+        return new GLuint(load_texture(data_path("textures/hatch_3.png")));
+        });
 Load< GLuint > hatch4_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/hatch_4.png")));
-});
+        return new GLuint(load_texture(data_path("textures/hatch_4.png")));
+        });
 Load< GLuint > hatch5_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/hatch_5.png")));
-});
+        return new GLuint(load_texture(data_path("textures/hatch_5.png")));
+        });
 Load< GLuint > level0_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/level0.png")));
-});
+        return new GLuint(load_texture(data_path("textures/level0.png")));
+        });
 Load< GLuint > level1_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/level1.png")));
-});
+        return new GLuint(load_texture(data_path("textures/level1.png")));
+        });
 Load< GLuint > level2_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/level2.png")));
-});
+        return new GLuint(load_texture(data_path("textures/level2.png")));
+        });
 Load< GLuint > level3_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/level3.png")));
-});
+        return new GLuint(load_texture(data_path("textures/level3.png")));
+        });
 Load< GLuint > level4_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/level4.png")));
-});
+        return new GLuint(load_texture(data_path("textures/level4.png")));
+        });
 
 Load< GLuint > white_tex(LoadTagDefault, [](){
-	GLuint tex = 0;
-	glGenTextures(1, &tex);
-	glBindTexture(GL_TEXTURE_2D, tex);
-	glm::u8vec4 white(0xff, 0xff, 0xff, 0xff);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, glm::value_ptr(white));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glBindTexture(GL_TEXTURE_2D, 0);
+        GLuint tex = 0;
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glm::u8vec4 white(0xff, 0xff, 0xff, 0xff);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, glm::value_ptr(white));
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glBindTexture(GL_TEXTURE_2D, 0);
 
-	return new GLuint(tex);
-});
+        return new GLuint(tex);
+        });
 
 Scene::Transform *camera_parent_transform = nullptr;
 Scene::Camera *camera = nullptr;
@@ -169,80 +169,80 @@ bool paused = false;
 Game state1, state2;
 
 Load< Scene > scene(LoadTagDefault, [](){
-	Scene *ret = new Scene;
+        Scene *ret = new Scene;
 
-	//pre-build some program info (material) blocks to assign to each object:
-	Scene::Object::ProgramInfo scene_program_info;
-	scene_program_info.program = scene_program->program;
-	scene_program_info.vao = *meshes_for_scene_program;
-	scene_program_info.mvp_mat4  = scene_program->object_to_clip_mat4;
-	scene_program_info.mv_mat4x3 = scene_program->object_to_light_mat4x3;
-	scene_program_info.itmv_mat3 = scene_program->normal_to_light_mat3;
+        //pre-build some program info (material) blocks to assign to each object:
+        Scene::Object::ProgramInfo scene_program_info;
+        scene_program_info.program = scene_program->program;
+        scene_program_info.vao = *meshes_for_scene_program;
+        scene_program_info.mvp_mat4  = scene_program->object_to_clip_mat4;
+        scene_program_info.mv_mat4x3 = scene_program->object_to_light_mat4x3;
+        scene_program_info.itmv_mat3 = scene_program->normal_to_light_mat3;
 
-	Scene::Object::ProgramInfo depth_program_info;
-	depth_program_info.program = depth_program->program;
-	depth_program_info.vao = *meshes_for_depth_program;
-	depth_program_info.mvp_mat4  = depth_program->object_to_clip_mat4;
+        Scene::Object::ProgramInfo depth_program_info;
+        depth_program_info.program = depth_program->program;
+        depth_program_info.vao = *meshes_for_depth_program;
+        depth_program_info.mvp_mat4  = depth_program->object_to_clip_mat4;
 
-	//load transform hierarchy:
-	ret->load(data_path("test.scene"), [&](Scene &s, Scene::Transform *t, std::string const &m){
-		Scene::Object *obj = s.new_object(t);
+        //load transform hierarchy:
+        ret->load(data_path("test.scene"), [&](Scene &s, Scene::Transform *t, std::string const &m){
+                Scene::Object *obj = s.new_object(t);
 
-		obj->programs[Scene::Object::ProgramTypeDefault] = scene_program_info;
-		if (t->name == "Platform") {
-			obj->programs[Scene::Object::ProgramTypeDefault].textures[0] = *marble_tex;
-		} else if (t->name == "Pedestal") {
-			obj->programs[Scene::Object::ProgramTypeDefault].textures[0] = *marble_tex;
-		} else {
-			obj->programs[Scene::Object::ProgramTypeDefault].textures[0] = *white_tex;
-		}
+                obj->programs[Scene::Object::ProgramTypeDefault] = scene_program_info;
+                if (t->name == "Platform") {
+                obj->programs[Scene::Object::ProgramTypeDefault].textures[0] = *marble_tex;
+                } else if (t->name == "Pedestal") {
+                obj->programs[Scene::Object::ProgramTypeDefault].textures[0] = *marble_tex;
+                } else {
+                obj->programs[Scene::Object::ProgramTypeDefault].textures[0] = *white_tex;
+                }
 
-		obj->programs[Scene::Object::ProgramTypeShadow] = depth_program_info;
+                obj->programs[Scene::Object::ProgramTypeShadow] = depth_program_info;
 
-		MeshBuffer::Mesh const &mesh = meshes->lookup(m);
-		obj->programs[Scene::Object::ProgramTypeDefault].start = mesh.start;
-		obj->programs[Scene::Object::ProgramTypeDefault].count = mesh.count;
+                MeshBuffer::Mesh const &mesh = meshes->lookup(m);
+                obj->programs[Scene::Object::ProgramTypeDefault].start = mesh.start;
+                obj->programs[Scene::Object::ProgramTypeDefault].count = mesh.count;
 
-		obj->programs[Scene::Object::ProgramTypeShadow].start = mesh.start;
-		obj->programs[Scene::Object::ProgramTypeShadow].count = mesh.count;
-	});
+                obj->programs[Scene::Object::ProgramTypeShadow].start = mesh.start;
+                obj->programs[Scene::Object::ProgramTypeShadow].count = mesh.count;
+                });
 
-	//look up camera parent transform:
-	for (Scene::Transform *t = ret->first_transform; t != nullptr; t = t->alloc_next) {
-		if (t->name == "CameraParent") {
-			if (camera_parent_transform) throw std::runtime_error("Multiple 'CameraParent' transforms in scene.");
-			camera_parent_transform = t;
-		}
-/*		if (t->name == "SpotParent") {
-			if (spot_parent_transform) throw std::runtime_error("Multiple 'SpotParent' transforms in scene.");
-			spot_parent_transform = t;
-		}
-*/
-	}
-	if (!camera_parent_transform) throw std::runtime_error("No 'CameraParent' transform in scene.");
-//	if (!spot_parent_transform) throw std::runtime_error("No 'SpotParent' transform in scene.");
+        //look up camera parent transform:
+        for (Scene::Transform *t = ret->first_transform; t != nullptr; t = t->alloc_next) {
+            if (t->name == "CameraParent") {
+                if (camera_parent_transform) throw std::runtime_error("Multiple 'CameraParent' transforms in scene.");
+                camera_parent_transform = t;
+            }
+            /*        if (t->name == "SpotParent") {
+                    if (spot_parent_transform) throw std::runtime_error("Multiple 'SpotParent' transforms in scene.");
+                    spot_parent_transform = t;
+                    }
+                    */
+        }
+        if (!camera_parent_transform) throw std::runtime_error("No 'CameraParent' transform in scene.");
+        //    if (!spot_parent_transform) throw std::runtime_error("No 'SpotParent' transform in scene.");
 
-	//look up the camera:
-	for (Scene::Camera *c = ret->first_camera; c != nullptr; c = c->alloc_next) {
-		if (c->transform->name == "Camera") {
-			if (camera) throw std::runtime_error("Multiple 'Camera' objects in scene.");
-			camera = c;
-		}
-	}
-	if (!camera) throw std::runtime_error("No 'Camera' camera in scene.");
-/*
-	//look up the spotlight:
-	for (Scene::Lamp *l = ret->first_lamp; l != nullptr; l = l->alloc_next) {
-		if (l->transform->name == "Spot") {
-			if (spot) throw std::runtime_error("Multiple 'Spot' objects in scene.");
-			if (l->type != Scene::Lamp::Spot) throw std::runtime_error("Lamp 'Spot' is not a spotlight.");
-			spot = l;
-		}
-	}
-	if (!spot) throw std::runtime_error("No 'Spot' spotlight in scene.");
-*/
+        //look up the camera:
+        for (Scene::Camera *c = ret->first_camera; c != nullptr; c = c->alloc_next) {
+            if (c->transform->name == "Camera") {
+                if (camera) throw std::runtime_error("Multiple 'Camera' objects in scene.");
+                camera = c;
+            }
+        }
+        if (!camera) throw std::runtime_error("No 'Camera' camera in scene.");
+        /*
+        //look up the spotlight:
+        for (Scene::Lamp *l = ret->first_lamp; l != nullptr; l = l->alloc_next) {
+        if (l->transform->name == "Spot") {
+        if (spot) throw std::runtime_error("Multiple 'Spot' objects in scene.");
+        if (l->type != Scene::Lamp::Spot) throw std::runtime_error("Lamp 'Spot' is not a spotlight.");
+        spot = l;
+        }
+        }
+        if (!spot) throw std::runtime_error("No 'Spot' spotlight in scene.");
+        */
 
-	return ret;
+        return ret;
 });
 
 GameMode::GameMode(Client &client_) : client(client_) {
@@ -266,11 +266,11 @@ void GameMode::add_primitive(int primitive_type){
     new_prim.position = glm::vec3(0, -0.3, z);
     state1.primitives[state1.prim_num] = new_prim;
     state1.prim_num++;
-    std::cout<<"added"<<std::endl;
+    std::cout<<"added primitive "<<primitive_type<<std::endl;
 }
 
 bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
-	//ignore any keys that are the result of automatic key repeat:
+    //ignore any keys that are the result of automatic key repeat:
 
     if (evt.type == SDL_KEYDOWN) {
         updated = true;
@@ -331,14 +331,14 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
     if (evt.type == SDL_MOUSEBUTTONDOWN) {
 
-	}
-	return false;
+    }
+    return false;
 }
 
 void GameMode::update(float elapsed) {
     if(paused) return;
-	camera_parent_transform->rotation = glm::angleAxis(camera_spin, glm::vec3(0.0f, 0.0f, 1.0f));
-//	spot_parent_transform->rotation = glm::angleAxis(spot_spin, glm::vec3(0.0f, 0.0f, 1.0f));
+    camera_parent_transform->rotation = glm::angleAxis(camera_spin, glm::vec3(0.0f, 0.0f, 1.0f));
+    //    spot_parent_transform->rotation = glm::angleAxis(spot_spin, glm::vec3(0.0f, 0.0f, 1.0f));
     time_left = (100*(level+1))-elapsed_time;
     if(time_left<=0){
         if(state1.score>state2.score){
@@ -354,35 +354,35 @@ void GameMode::update(float elapsed) {
         client.connection.send_raw(&state1, sizeof(state1));
     }
     client.poll([&](Connection *c, Connection::Event event){
-        if (event == Connection::OnOpen) {
-        //probably won't get this.
-        } else if (event == Connection::OnClose) {
+            if (event == Connection::OnOpen) {
+            //probably won't get this.
+            } else if (event == Connection::OnClose) {
             std::cerr << "Lost connection to server." << std::endl;
-        } else { assert(event == Connection::OnRecv);}
+            } else { assert(event == Connection::OnRecv);}
 
-        if(c->recv_buffer[0] == 'p'){
+            if(c->recv_buffer[0] == 'p'){
             if(c->recv_buffer.size() < 2){
-                return;
+            return;
             }else{
-                memcpy(&playerNum, c->recv_buffer.data()+1, 1);
-                c->recv_buffer.erase(c->recv_buffer.begin(),
-                        c->recv_buffer.begin() + 2);
-                std::cout<<"You're Player "<<playerNum<<std::endl;
+            memcpy(&playerNum, c->recv_buffer.data()+1, 1);
+            c->recv_buffer.erase(c->recv_buffer.begin(),
+                    c->recv_buffer.begin() + 2);
+            std::cout<<"You're Player "<<playerNum<<std::endl;
             }
-        }else if (c->recv_buffer[0] == 'a') {
+            }else if (c->recv_buffer[0] == 'a') {
             if (c->recv_buffer.size() < 1 + sizeof(state2)) {
-                return; //wait for more data
+            return; //wait for more data
             } else {
-                    memcpy(&state2, c->recv_buffer.data()+1,
-                            sizeof(state2));
-                    memcpy(&elapsed_time,
-                            c->recv_buffer.data()+1+sizeof(state2),
-                            sizeof(int));
-                    c->recv_buffer.erase(c->recv_buffer.begin(),
-                        c->recv_buffer.begin()+ 1 + sizeof(state2)+sizeof(int));
-                    //std::cout<<state1.score<<" "<<state2.score<<std::endl;
+            memcpy(&state2, c->recv_buffer.data()+1,
+                    sizeof(state2));
+            memcpy(&elapsed_time,
+                    c->recv_buffer.data()+1+sizeof(state2),
+                    sizeof(int));
+            c->recv_buffer.erase(c->recv_buffer.begin(),
+                    c->recv_buffer.begin()+ 1 + sizeof(state2)+sizeof(int));
+            //std::cout<<state1.score<<" "<<state2.score<<std::endl;
             }
-        }
+            }
     });
 
 }
@@ -390,31 +390,31 @@ void GameMode::update(float elapsed) {
 //GameMode will render to some offscreen framebuffer(s).
 //This code allocates and resizes them as needed:
 struct Textures {
-	glm::uvec2 size = glm::uvec2(0,0); //remember the size of the framebuffer
+    glm::uvec2 size = glm::uvec2(0,0); //remember the size of the framebuffer
 
-	GLuint color_tex = 0;
+    GLuint color_tex = 0;
     GLuint bg_tex = 0;
     GLuint hatched_tex = 0;
-	GLuint depth_tex = 0;
+    GLuint depth_tex = 0;
     GLuint player_tex = 0;
     GLuint model_tex = 0;
     GLuint text_tex = 0;
-	void allocate(glm::uvec2 const &new_size) {
-    //allocate full-screen framebuffer:
+    void allocate(glm::uvec2 const &new_size) {
+        //allocate full-screen framebuffer:
 
-		if (size != new_size) {
-			size = new_size;
+        if (size != new_size) {
+            size = new_size;
 
             auto alloc_tex = [this](GLuint *tex, GLint internalformat, GLint format){
                 if (*tex == 0) glGenTextures(1, tex);
-	    		glBindTexture(GL_TEXTURE_2D, *tex);
-		    	glTexImage2D(GL_TEXTURE_2D, 0, internalformat, size.x,
+                glBindTexture(GL_TEXTURE_2D, *tex);
+                glTexImage2D(GL_TEXTURE_2D, 0, internalformat, size.x,
                         size.y, 0, format, GL_UNSIGNED_BYTE, NULL);
-			    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	    		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		    	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			    glBindTexture(GL_TEXTURE_2D, 0);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                glBindTexture(GL_TEXTURE_2D, 0);
             };
 
             alloc_tex(&color_tex, GL_RGBA, GL_RGBA);
@@ -424,10 +424,10 @@ struct Textures {
             alloc_tex(&player_tex, GL_RGBA, GL_RGBA);
             alloc_tex(&model_tex, GL_RGBA, GL_RGBA);
             alloc_tex(&text_tex, GL_RGBA, GL_RGBA);
-			GL_ERRORS();
-		}
+            GL_ERRORS();
+        }
 
-	}
+    }
 } textures;
 
 void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_){
@@ -445,18 +445,18 @@ void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_){
     glDrawBuffers(2, bufs);
     check_fb();
 
-	glBindFramebuffer(GL_FRAMEBUFFER, fb);
-	glViewport(0,0, textures.size.x, textures.size.y);
-	camera->aspect = textures.size.x / float(textures.size.y);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb);
+    glViewport(0,0, textures.size.x, textures.size.y);
+    camera->aspect = textures.size.x / float(textures.size.y);
 
     GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     glClearBufferfv(GL_COLOR, 0, black);
 
-	//set up basic OpenGL state:
-	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_BLEND);
-	glBlendEquation(GL_FUNC_ADD);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //set up basic OpenGL state:
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     GLuint level_tex = 0;
     if(level==0) level_tex= *level0_tex;
@@ -469,7 +469,7 @@ void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_){
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, level_tex);
 
-	glUseProgram(surface_program->program);
+    glUseProgram(surface_program->program);
     glUniform1i(surface_program->width, width);
     glUniform1i(surface_program->height, height);
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -492,28 +492,28 @@ void GameMode::draw_main(GLuint text_tex, GLuint bg_tex, GLuint model_tex,
     if(fb==0) glGenFramebuffers(1, &fb);
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                            color_tex, 0);
+            color_tex, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
-                            player_tex, 0);
+            player_tex, 0);
     GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
     glDrawBuffers(2, bufs);
     check_fb();
 
-	//Draw scene to off-screen framebuffer:
+    //Draw scene to off-screen framebuffer:
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
-	glViewport(0,0, textures.size.x, textures.size.y);
+    glViewport(0,0, textures.size.x, textures.size.y);
     camera->aspect = textures.size.x / float(textures.size.y);
 
     GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     glClearBufferfv(GL_COLOR, 0, black);
     glClearBufferfv(GL_COLOR, 1, black);
-	glClear(GL_DEPTH_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
 
-	//set up basic OpenGL state:
-	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_BLEND);
-	glBlendEquation(GL_FUNC_ADD);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //set up basic OpenGL state:
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, bg_tex);
@@ -536,7 +536,7 @@ void GameMode::draw_main(GLuint text_tex, GLuint bg_tex, GLuint model_tex,
 
     glUseProgram(main_program->program);
     set_prim_uniforms();
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
     GL_ERRORS();
 }
 
@@ -577,7 +577,7 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
     }
     //std::cout<<p_xoffset<<" "<<p_xend<<std::endl;
     //std::cout<<p2_xoffset<<" "<<p2_xend<<std::endl;
- //   std::cout<<p_yoffset<<" "<<p_yend<<std::endl;
+    //   std::cout<<p_yoffset<<" "<<p_yend<<std::endl;
 
     int m_xoffset = width;
     int m_yoffset = height;
@@ -626,22 +626,22 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
 }
 
 void GameMode::set_prim_uniforms(){
-    int prim10[10];
-    float posX10[10];
-    float posY10[10];
-    float posZ10[10];
-    float rotX10[10];
-    float rotY10[10];
-    float rotZ10[10];
-    float scale10[10];
-    int prim10b[10];
-    float posX10b[10];
-    float posY10b[10];
-    float posZ10b[10];
-    float rotX10b[10];
-    float rotY10b[10];
-    float rotZ10b[10];
-    float scale10b[10];
+    int prim10[10] = {0};
+    float posX10[10] = {0.0};
+    float posY10[10] = {0.0};
+    float posZ10[10] = {0.0};
+    float rotX10[10] = {0.0};
+    float rotY10[10] = {0.0};
+    float rotZ10[10] = {0.0};
+    float scale10[10] = {1.0f};
+    int prim10b[10] = {0};
+    float posX10b[10] = {0.0};
+    float posY10b[10] = {0.0};
+    float posZ10b[10] = {0.0};
+    float rotX10b[10] = {0.0};
+    float rotY10b[10] = {0.0};
+    float rotZ10b[10] = {0.0};
+    float scale10b[10] = {1.0f};
     for(int i = 0; i<10; i++){
         if(i<state1.prim_num){
             prim10[i] = state1.primitives[i].shape;
@@ -686,11 +686,11 @@ void GameMode::set_prim_uniforms(){
 }
 
 void GameMode::draw(glm::uvec2 const &drawable_size) {
-	textures.allocate(drawable_size);
+    textures.allocate(drawable_size);
     {//draw score and timer
-		glDisable(GL_DEPTH_TEST);
+        glDisable(GL_DEPTH_TEST);
         std::string message ="SCORE"+std::to_string(playerNum=='0'?state1.score:state2.score);
-		float height = 0.05f;
+        float height = 0.05f;
         static GLuint fb = 0;
         if(fb==0) glGenFramebuffers(1, &fb);
         glBindFramebuffer(GL_FRAMEBUFFER, fb);
@@ -705,12 +705,12 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 
         GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
         glClearBufferfv(GL_COLOR, 0, black);
-		draw_text(message, glm::vec2(-1.0,-0.58), height);
+        draw_text(message, glm::vec2(-1.0,-0.58), height);
         message = "SCORE "+std::to_string(playerNum=='1'?state1.score:state2.score);
-		draw_text(message, glm::vec2(1.0,-0.58), height);
+        draw_text(message, glm::vec2(1.0,-0.58), height);
         message = "TIME "+std::to_string(int(time_left));
         height = 0.1;
-		draw_text(message, glm::vec2(-0.2, 0.8), height);
+        draw_text(message, glm::vec2(-0.2, 0.8), height);
     }
     width = textures.size.x;
     height = textures.size.y;
@@ -725,27 +725,27 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
     if(updated) compare(textures.player_tex, textures.model_tex);
 
     glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE0);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	GL_ERRORS();
+    GL_ERRORS();
 
-	//Copy scene from color buffer to screen, performing post-processing effects:
-	glActiveTexture(GL_TEXTURE0);
+    //Copy scene from color buffer to screen, performing post-processing effects:
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textures.color_tex);
 
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
-	glUseProgram(*copy_program);
-	glBindVertexArray(*empty_vao);
+    glUseProgram(*copy_program);
+    glBindVertexArray(*empty_vao);
 
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	glUseProgram(0);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, 0);
+    glUseProgram(0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void GameMode::reset(){
@@ -761,46 +761,46 @@ void GameMode::reset(){
 }
 
 void GameMode::show_lose() {
-	std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
+    std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
 
-	std::shared_ptr< Mode > game = shared_from_this();
-	menu->background = game;
+    std::shared_ptr< Mode > game = shared_from_this();
+    menu->background = game;
 
-	menu->choices.emplace_back("YOU LOST");
+    menu->choices.emplace_back("YOU LOST");
     menu->choices.emplace_back("CONTINUE", [this, game](){
-				level++;
-                reset();
-				Mode::set_current(game);
-			});
-	menu->choices.emplace_back("QUIT", [](){
-			Mode::set_current(nullptr);
-			});
+            level++;
+            reset();
+            Mode::set_current(game);
+            });
+    menu->choices.emplace_back("QUIT", [](){
+            Mode::set_current(nullptr);
+            });
 
-	menu->selected = 1;
-	paused = true;
+    menu->selected = 1;
+    paused = true;
 
-	Mode::set_current(menu);
+    Mode::set_current(menu);
 }
 
 void GameMode::show_win() {
-	std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
+    std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
 
-	std::shared_ptr< Mode > game = shared_from_this();
-	menu->background = game;
+    std::shared_ptr< Mode > game = shared_from_this();
+    menu->background = game;
 
-	menu->choices.emplace_back("YOU WON");
-	menu->choices.emplace_back("CONTINUE", [this, game](){
-				level++;
-                reset();
-				Mode::set_current(game);
-			});
+    menu->choices.emplace_back("YOU WON");
+    menu->choices.emplace_back("CONTINUE", [this, game](){
+            level++;
+            reset();
+            Mode::set_current(game);
+            });
     menu->choices.emplace_back("QUIT", [](){
-			Mode::set_current(nullptr);
-			});
+            Mode::set_current(nullptr);
+            });
 
-	menu->selected = 1;
-	paused = true;
+    menu->selected = 1;
+    paused = true;
 
-	Mode::set_current(menu);
+    Mode::set_current(menu);
 }
 
