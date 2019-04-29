@@ -11,6 +11,7 @@ struct SurfaceProgram {
     GLuint width = -1U;
     GLuint height = -1U;
     GLuint edit_mode = -1U;
+    GLuint primitives = -1U;
 
 	//uniform locations:
 	SurfaceProgram();

@@ -170,8 +170,26 @@ Load< GLuint > menu2_tex(LoadTagDefault, [](){
 Load< GLuint > menu3_tex(LoadTagDefault, [](){
         return new GLuint(load_pic(data_path("textures/menu4.png")));
         });
+Load< GLuint > menu4_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/menu5.png")));
+        });
 Load< GLuint > expand_tex(LoadTagDefault, [](){
         return new GLuint(load_pic(data_path("textures/expand.png")));
+        });
+Load< GLuint > expand2_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/expand2.png")));
+        });
+Load< GLuint > sphere_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/sphere.png")));
+        });
+Load< GLuint > cube_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/cube.png")));
+        });
+Load< GLuint > cone_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/cone.png")));
+        });
+Load< GLuint > cylinder_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/cylinder.png")));
         });
 
 Load< GLuint > white_tex(LoadTagDefault, [](){
@@ -308,7 +326,7 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
     if (evt.type == SDL_KEYDOWN) {
         updated = true;
-
+/*
         if (evt.key.keysym.scancode == SDL_SCANCODE_LEFT){
             selected = selected-1;
             if(selected<0) selected = state1.prim_num-1;
@@ -316,7 +334,38 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
             selected = selected+1;
             if(selected>=state1.prim_num) selected = 0;
         }
-
+*/
+        if (evt.key.keysym.scancode == SDL_SCANCODE_1){
+            selected = 0;
+            if(selected>=state1.prim_num) selected = 0;
+        }else if (evt.key.keysym.scancode == SDL_SCANCODE_2){
+            selected = 1;
+            if(selected>=state1.prim_num) selected = 1;
+        }else if (evt.key.keysym.scancode == SDL_SCANCODE_3){
+            selected = 2;
+            if(selected>=state1.prim_num) selected = 2;
+        }else if (evt.key.keysym.scancode == SDL_SCANCODE_4){
+            selected = 3;
+            if(selected>=state1.prim_num) selected = 3;
+        }else if (evt.key.keysym.scancode == SDL_SCANCODE_5){
+            selected = 4;
+            if(selected>=state1.prim_num) selected = 4;
+        }else if (evt.key.keysym.scancode == SDL_SCANCODE_6){
+            selected = 5;
+            if(selected>=state1.prim_num) selected = 5;
+        }else if (evt.key.keysym.scancode == SDL_SCANCODE_7){
+            selected = 6;
+            if(selected>=state1.prim_num) selected = 6;
+        }else if (evt.key.keysym.scancode == SDL_SCANCODE_8){
+            selected = 7;
+            if(selected>=state1.prim_num) selected = 7;
+        }else if (evt.key.keysym.scancode == SDL_SCANCODE_9){
+            selected = 8;
+            if(selected>=state1.prim_num) selected = 8;
+        }else if (evt.key.keysym.scancode == SDL_SCANCODE_0){
+            selected = 9;
+            if(selected>=state1.prim_num) selected = 9;
+        }
         if(evt.key.keysym.scancode == SDL_SCANCODE_A){
             if(edit_mode==0) state1.primitives[selected].position.z+=0.1;
             else if(edit_mode==1)state1.primitives[selected].rotation.y -= 0.1;
@@ -342,23 +391,24 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
             else if(edit_mode==1)state1.primitives[selected].rotation.x -= 0.1;
             else if(edit_mode==2) state1.primitives[selected].scale += 0.1;
         }
-
     }
 
     if (evt.type == SDL_MOUSEBUTTONDOWN) {
         int x = evt.button.x;
         int y = evt.button.y;
         if(y>0.8175*height){
-            if(x>0.375*width && x<0.42*width) edit_mode = 0;
-            else if(x>0.46*width && x<0.51*width) edit_mode = 1;
-            else if(x>0.55*width && x<0.60*width) edit_mode = 2;
-            else if(x>0.64*width && x<0.68*width) edit_mode = 3;
-        }else if(y>0.675*height && y<0.70*width){
+            if(x>0.30*width && x<0.35*width) edit_mode = 0;
+            else if(x>0.39*width && x<0.44*width) edit_mode = 1;
+            else if(x>0.48*width && x<0.53*width) edit_mode = 2;
+            else if(x>0.56*width && x<0.61*width) edit_mode = 3;
+            else if(x>0.65*width && x<0.70*width) edit_mode = 4;
+        }else if(edit_mode==3 && y>0.675*height && y<0.70*width){
             if(x>0.43*width && x<0.47*width) add_primitive(1);
             else if(x>0.49*width && x<0.54*width) add_primitive(2);
             else if(x>0.57*width && x<0.61*width) add_primitive(3);
             else if(x>0.63*width && x<0.67*width) add_primitive(4);
         }
+        std::cout<<x<<" "<<std::endl;
     }
     return false;
 }
@@ -515,12 +565,32 @@ void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_,
     glActiveTexture(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_2D, *menu3_tex);
     glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, *menu4_tex);
+    glActiveTexture(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_2D, *expand_tex);
-
+    glActiveTexture(GL_TEXTURE8);
+    glBindTexture(GL_TEXTURE_2D, *expand2_tex);
+    glActiveTexture(GL_TEXTURE9);
+    glBindTexture(GL_TEXTURE_2D, *sphere_tex);
+    glActiveTexture(GL_TEXTURE10);
+    glBindTexture(GL_TEXTURE_2D, *cube_tex);
+    glActiveTexture(GL_TEXTURE11);
+    glBindTexture(GL_TEXTURE_2D, *cone_tex);
+    glActiveTexture(GL_TEXTURE12);
+    glBindTexture(GL_TEXTURE_2D, *cylinder_tex);
     glUseProgram(surface_program->program);
+
+    int prim10[10] = {0};
+    for(int i = 0; i<10; i++){
+        if(i<state1.prim_num){
+            prim10[i] = state1.primitives[i].shape;
+        }
+    }
+    glUniform1iv(surface_program->primitives, 10, prim10);
     glUniform1i(surface_program->width, width);
     glUniform1i(surface_program->height, height);
     glUniform1i(surface_program->edit_mode, edit_mode);
+
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glActiveTexture(GL_TEXTURE0);
