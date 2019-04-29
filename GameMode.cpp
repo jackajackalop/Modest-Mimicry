@@ -96,6 +96,25 @@ GLuint load_texture(std::string const &filename) {
 
     return tex;
 }
+GLuint load_pic(std::string const &filename) {
+    glm::uvec2 size;
+    std::vector< glm::u8vec4 > data;
+    load_png(filename, &size, &data, LowerLeftOrigin);
+
+    GLuint tex = 0;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    GL_ERRORS();
+
+    return tex;
+}
 Load< GLuint > wood_tex(LoadTagDefault, [](){
         return new GLuint(load_texture(data_path("textures/grid.png")));
         });
@@ -138,6 +157,21 @@ Load< GLuint > level3_tex(LoadTagDefault, [](){
         });
 Load< GLuint > level4_tex(LoadTagDefault, [](){
         return new GLuint(load_texture(data_path("textures/level4.png")));
+        });
+Load< GLuint > menu0_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/menu1.png")));
+        });
+Load< GLuint > menu1_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/menu2.png")));
+        });
+Load< GLuint > menu2_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/menu3.png")));
+        });
+Load< GLuint > menu3_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/menu4.png")));
+        });
+Load< GLuint > expand_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/expand.png")));
         });
 
 Load< GLuint > white_tex(LoadTagDefault, [](){
@@ -399,6 +433,7 @@ struct Textures {
     GLuint player_tex = 0;
     GLuint model_tex = 0;
     GLuint text_tex = 0;
+    GLuint ui_tex = 0;
     void allocate(glm::uvec2 const &new_size) {
         //allocate full-screen framebuffer:
 
@@ -424,15 +459,21 @@ struct Textures {
             alloc_tex(&player_tex, GL_RGBA, GL_RGBA);
             alloc_tex(&model_tex, GL_RGBA, GL_RGBA);
             alloc_tex(&text_tex, GL_RGBA, GL_RGBA);
+            alloc_tex(&ui_tex, GL_RGBA, GL_RGBA);
             GL_ERRORS();
         }
 
     }
 } textures;
 
-void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_){
+void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_,
+        GLuint *ui_tex_){
+    assert(bg_tex_);
+    assert(model_tex_);
+    assert(ui_tex_);
     auto &bg_tex = *bg_tex_;
     auto &model_tex = *model_tex_;
+    auto &ui_tex = *ui_tex_;
 
     static GLuint fb = 0;
     if(fb==0) glGenFramebuffers(1, &fb);
@@ -441,8 +482,11 @@ void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_){
             bg_tex, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
             model_tex, 0);
-    GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-    glDrawBuffers(2, bufs);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
+            ui_tex, 0);
+    GLenum bufs[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
+                        GL_COLOR_ATTACHMENT2};
+    glDrawBuffers(3, bufs);
     check_fb();
 
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
@@ -468,21 +512,42 @@ void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_){
     glBindTexture(GL_TEXTURE_2D, *bg);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, level_tex);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, *menu0_tex);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, *menu1_tex);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, *menu2_tex);
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, *menu3_tex);
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, *expand_tex);
 
     glUseProgram(surface_program->program);
     glUniform1i(surface_program->width, width);
     glUniform1i(surface_program->height, height);
+    glUniform1i(surface_program->edit_mode, edit_mode);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
 }
 
 void GameMode::draw_main(GLuint text_tex, GLuint bg_tex, GLuint model_tex,
-        GLuint* color_tex_, GLuint* player_tex_){
+        GLuint ui_tex, GLuint* color_tex_, GLuint* player_tex_){
     assert(color_tex_);
     assert(player_tex_);
     auto &color_tex = *color_tex_;
@@ -533,6 +598,8 @@ void GameMode::draw_main(GLuint text_tex, GLuint bg_tex, GLuint model_tex,
     glBindTexture(GL_TEXTURE_2D, model_tex);
     glActiveTexture(GL_TEXTURE8);
     glBindTexture(GL_TEXTURE_2D, text_tex);
+    glActiveTexture(GL_TEXTURE9);
+    glBindTexture(GL_TEXTURE_2D, ui_tex);
 
     glUseProgram(main_program->program);
     set_prim_uniforms();
@@ -719,9 +786,9 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
     glUniform3fv(scene_program->viewPos, 1,
             glm::value_ptr(camera->transform->make_local_to_world()));
     scene->draw(camera);
-    draw_surface(&textures.bg_tex, &textures.model_tex);
+    draw_surface(&textures.bg_tex, &textures.model_tex, &textures.ui_tex);
     draw_main(textures.text_tex, textures.bg_tex, textures.model_tex,
-            &textures.color_tex, &textures.player_tex);
+            textures.ui_tex, &textures.color_tex, &textures.player_tex);
     if(updated) compare(textures.player_tex, textures.model_tex);
 
     glActiveTexture(GL_TEXTURE1);

@@ -27,6 +27,7 @@ MainProgram::MainProgram() {
         "uniform sampler2D hatch5_tex;\n"
         "uniform sampler2D model_tex; \n"
         "uniform sampler2D text_tex; \n"
+        "uniform sampler2D ui_tex; \n"
         "uniform int width;\n"
         "uniform int height;\n"
 
@@ -400,12 +401,15 @@ MainProgram::MainProgram() {
         "   vec4 model_color = texelFetch(model_tex, ivec2(model_coord),0);\n"
         "   vec4 bg_color = texelFetch(bg_tex, ivec2(gl_FragCoord.xy), 0)\n;"
         "   vec4 text_color = texelFetch(text_tex, ivec2(gl_FragCoord.xy), 0); \n"
+        "   vec4 ui_color = texelFetch(ui_tex, ivec2(gl_FragCoord.xy), 0); \n"
+
         "   vec4 shaded = vec4(tot, 1.0);\n"
         "   vec4 hatched = shade(shaded);\n"
         "   if(hatched!=vec4(0,0,0,1)&&bg_color.r>0.8) color_out = hatched; \n"
         "   else color_out= (model_color.r>0.2?model_color:bg_color);\n"
         "   color_out += text_color; \n"
         //"   if(gl_FragCoord.x>800&&gl_FragCoord.x<1200) color_out=vec4(1,0,0,1);"
+        "   if(ui_color.r>0.25) color_out = ui_color; \n"
         "   player_out = shaded;\n"
 		"}\n"
 	);
@@ -445,6 +449,7 @@ MainProgram::MainProgram() {
     glUniform1i(glGetUniformLocation(program, "hatch5_tex"), 6);
     glUniform1i(glGetUniformLocation(program, "model_tex"), 7);
     glUniform1i(glGetUniformLocation(program, "text_tex"), 8);
+    glUniform1i(glGetUniformLocation(program, "ui_tex"), 9);
 
 	glUseProgram(0);
 
