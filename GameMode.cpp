@@ -318,6 +318,7 @@ void GameMode::add_primitive(int primitive_type){
     new_prim.position = glm::vec3(0, -0.3, z);
     state1.primitives[state1.prim_num] = new_prim;
     state1.prim_num++;
+    edit_mode = 0;
     std::cout<<"added primitive "<<primitive_type<<std::endl;
 }
 
@@ -326,46 +327,6 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
     if (evt.type == SDL_KEYDOWN) {
         updated = true;
-/*
-        if (evt.key.keysym.scancode == SDL_SCANCODE_LEFT){
-            selected = selected-1;
-            if(selected<0) selected = state1.prim_num-1;
-        }else if(evt.key.keysym.scancode == SDL_SCANCODE_RIGHT){
-            selected = selected+1;
-            if(selected>=state1.prim_num) selected = 0;
-        }
-*/
-        if (evt.key.keysym.scancode == SDL_SCANCODE_1){
-            selected = 0;
-            if(selected>=state1.prim_num) selected = 0;
-        }else if (evt.key.keysym.scancode == SDL_SCANCODE_2){
-            selected = 1;
-            if(selected>=state1.prim_num) selected = 1;
-        }else if (evt.key.keysym.scancode == SDL_SCANCODE_3){
-            selected = 2;
-            if(selected>=state1.prim_num) selected = 2;
-        }else if (evt.key.keysym.scancode == SDL_SCANCODE_4){
-            selected = 3;
-            if(selected>=state1.prim_num) selected = 3;
-        }else if (evt.key.keysym.scancode == SDL_SCANCODE_5){
-            selected = 4;
-            if(selected>=state1.prim_num) selected = 4;
-        }else if (evt.key.keysym.scancode == SDL_SCANCODE_6){
-            selected = 5;
-            if(selected>=state1.prim_num) selected = 5;
-        }else if (evt.key.keysym.scancode == SDL_SCANCODE_7){
-            selected = 6;
-            if(selected>=state1.prim_num) selected = 6;
-        }else if (evt.key.keysym.scancode == SDL_SCANCODE_8){
-            selected = 7;
-            if(selected>=state1.prim_num) selected = 7;
-        }else if (evt.key.keysym.scancode == SDL_SCANCODE_9){
-            selected = 8;
-            if(selected>=state1.prim_num) selected = 8;
-        }else if (evt.key.keysym.scancode == SDL_SCANCODE_0){
-            selected = 9;
-            if(selected>=state1.prim_num) selected = 9;
-        }
         if(evt.key.keysym.scancode == SDL_SCANCODE_A){
             if(edit_mode==0) state1.primitives[selected].position.z+=0.1;
             else if(edit_mode==1)state1.primitives[selected].rotation.y -= 0.1;
@@ -402,13 +363,24 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
             else if(x>0.48*width && x<0.53*width) edit_mode = 2;
             else if(x>0.56*width && x<0.61*width) edit_mode = 3;
             else if(x>0.65*width && x<0.70*width) edit_mode = 4;
-        }else if(edit_mode==3 && y>0.675*height && y<0.70*width){
-            if(x>0.43*width && x<0.47*width) add_primitive(1);
-            else if(x>0.49*width && x<0.54*width) add_primitive(2);
-            else if(x>0.57*width && x<0.61*width) add_primitive(3);
-            else if(x>0.63*width && x<0.67*width) add_primitive(4);
+        }else if(edit_mode==3 && y>0.675*height && y<0.70*height){
+            if(x>0.36*width && x<0.41*width) add_primitive(1);
+            else if(x>0.42*width && x<0.47*width) add_primitive(2);
+            else if(x>0.48*width && x<0.53*width) add_primitive(3);
+            else if(x>0.54*width && x<0.59*width) add_primitive(4);
+        }else if(edit_mode==4 && y>0.67*height && y<0.735*height){
+            if(x>0.26*width && x<0.30*width) selected=0;
+            else if(x>0.30*width && x<0.34*width) selected=1;
+            else if(x>0.34*width && x<0.38*width) selected=2;
+            else if(x>0.39*width && x<0.43*width) selected=3;
+            else if(x>0.43*width && x<0.47*width) selected=4;
+            else if(x>0.48*width && x<0.52*width) selected=5;
+            else if(x>0.52*width && x<0.56*width) selected=6;
+            else if(x>0.56*width && x<0.60*width) selected=7;
+            else if(x>0.60*width && x<0.65*width) selected=8;
+            else if(x>0.65*width && x<0.70*width) selected=9;
+            if(x>0.26*width && x<0.70*width) edit_mode = 0;
         }
-        std::cout<<x<<" "<<std::endl;
     }
     return false;
 }
