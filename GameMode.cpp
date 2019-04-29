@@ -197,7 +197,7 @@ Scene::Camera *camera = nullptr;
 int width =0, height =0;
 int time_left = 100;
 int elapsed_time = 0;
-int edit_mode = 0; //0 for translation, 1 for rotation, 2 for scaling
+int edit_mode = 0; //0 for translation, 1 for rotation, 2 for scaling, 3 for adding primitives
 bool updated = false;
 bool paused = false;
 Game state1, state2;
@@ -309,30 +309,12 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     if (evt.type == SDL_KEYDOWN) {
         updated = true;
 
-        if (evt.key.keysym.scancode == SDL_SCANCODE_T){
-            edit_mode = 0; //translation
-        }else if(evt.key.keysym.scancode == SDL_SCANCODE_R){
-            edit_mode = 1;
-        }else if(evt.key.keysym.scancode == SDL_SCANCODE_Y){
-            edit_mode = 2;
-        }
-
         if (evt.key.keysym.scancode == SDL_SCANCODE_LEFT){
             selected = selected-1;
             if(selected<0) selected = state1.prim_num-1;
         }else if(evt.key.keysym.scancode == SDL_SCANCODE_RIGHT){
             selected = selected+1;
             if(selected>=state1.prim_num) selected = 0;
-        }
-
-        if (evt.key.keysym.scancode == SDL_SCANCODE_1) {
-            add_primitive(1); //sphere
-        }else if (evt.key.keysym.scancode == SDL_SCANCODE_2) {
-            add_primitive(2); //sphere
-        }else if (evt.key.keysym.scancode == SDL_SCANCODE_3) {
-            add_primitive(3); //sphere
-        }else if (evt.key.keysym.scancode == SDL_SCANCODE_4) {
-            add_primitive(4); //sphere
         }
 
         if(evt.key.keysym.scancode == SDL_SCANCODE_A){
@@ -364,7 +346,19 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     }
 
     if (evt.type == SDL_MOUSEBUTTONDOWN) {
-
+        int x = evt.button.x;
+        int y = evt.button.y;
+        if(y>0.8175*height){
+            if(x>0.375*width && x<0.42*width) edit_mode = 0;
+            else if(x>0.46*width && x<0.51*width) edit_mode = 1;
+            else if(x>0.55*width && x<0.60*width) edit_mode = 2;
+            else if(x>0.64*width && x<0.68*width) edit_mode = 3;
+        }else if(y>0.675*height && y<0.70*width){
+            if(x>0.43*width && x<0.47*width) add_primitive(1);
+            else if(x>0.49*width && x<0.54*width) add_primitive(2);
+            else if(x>0.57*width && x<0.61*width) add_primitive(3);
+            else if(x>0.63*width && x<0.67*width) add_primitive(4);
+        }
     }
     return false;
 }

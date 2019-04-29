@@ -36,14 +36,21 @@ SurfaceProgram::SurfaceProgram() {
 		"	vec4 menu1_color = texture(menu1_tex, texCoord);\n"
 		"	vec4 menu2_color = texture(menu2_tex, texCoord);\n"
 		"   vec4 menu3_color = texture(menu3_tex, texCoord);\n"
+		"   vec4 expand_color = texture(expand_tex, texCoord);\n"
+
+        "   ui_out = vec4(0.0, 0.0, 0.0, 0.0); \n"
         "   if(edit_mode == 0) \n"
 		"       menu0_color = texture(menu0_tex, texCoordPlus);\n"
         "   else if(edit_mode == 1) \n"
 		"       menu1_color = texture(menu1_tex, texCoordPlus);\n"
         "   if(edit_mode == 2) \n"
 		"       menu2_color = texture(menu2_tex, texCoordPlus);\n"
-		"   vec4 expand_color = texture(expand_tex, texCoord);\n"
-        "   ui_out = menu0_color+menu1_color+menu2_color+menu3_color; \n"
+        "   if(edit_mode == 3){ \n"
+        "       menu3_color = texture(menu3_tex, texCoordPlus);\n"
+        "       ui_out += expand_color; \n"
+        "   } \n"
+
+        "   ui_out += menu0_color+menu1_color+menu2_color+menu3_color; \n"
 		"}\n"
 	);
 	glUseProgram(program);
