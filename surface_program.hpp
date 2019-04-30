@@ -10,6 +10,7 @@ struct SurfaceProgram {
 	GLuint program = 0;
     GLuint width = -1U;
     GLuint height = -1U;
+    GLuint time_left = -1U;
     GLuint edit_mode = -1U;
     GLuint primitives = -1U;
 

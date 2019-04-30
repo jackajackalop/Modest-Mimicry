@@ -13,6 +13,7 @@ SurfaceProgram::SurfaceProgram() {
 		"#version 330\n"
         "uniform int width; \n"
         "uniform int height; \n"
+        "uniform int time_left; \n"
         "uniform int edit_mode; \n"
         "uniform int primitives[10];\n"
 		"uniform sampler2D bg_tex;\n"
@@ -28,9 +29,20 @@ SurfaceProgram::SurfaceProgram() {
 		"uniform sampler2D cube_tex;\n"
 		"uniform sampler2D cone_tex;\n"
 		"uniform sampler2D cylinder_tex;\n"
+        "uniform sampler2D clock_tex;\n"
+        "uniform sampler2D hand_tex;\n"
         "layout(location=0) out vec4 bg_out;\n"
         "layout(location=1) out vec4 model_out;\n"
         "layout(location=2) out vec4 ui_out;\n"
+
+        "mat2 rotateX(float theta) { \n"
+        "   float c = cos(theta); \n"
+        "   float s = sin(theta); \n"
+        "   return mat2( "
+        "           vec2(c, -s), "
+        "           vec2(s, c)); \n "
+        "} \n"
+
 		"void main() {\n"
         "   vec2 texCoord = gl_FragCoord.xy/vec2(width, height); \n"
 		"	bg_out = texture(bg_tex, texCoord);\n"
@@ -76,10 +88,20 @@ SurfaceProgram::SurfaceProgram() {
         "   } \n"
 
         "   ui_out += menu0+menu1+menu2+menu3+menu4; \n"
+        "   texCoord = vec2(6.0, 4.0)*gl_FragCoord.xy-vec2(2.7*width, 3.0*height); \n"
+        "   texCoord /= vec2(width, height); \n"
+        "   vec4 clock_color = texture(clock_tex, texCoord);\n"
+        "   texCoord = vec2(6.0, 4.0)*gl_FragCoord.xy-vec2(3.15*width, 3.48*height); \n"
+        "   texCoord /= vec2(width, height); \n"
+        "   texCoord = rotateX((time_left/100.0)*6.28)*texCoord;\n"
+        "   vec4 hand_color = texture(hand_tex, texCoord);\n"
+        "   clock_color = (hand_color.r<0.9?hand_color:clock_color);\n"
+        "   bg_out = (clock_color.r>0.2?clock_color:bg_out);\n"
 		"}\n"
 	);
 	glUseProgram(program);
 
+    time_left = glGetUniformLocation(program, "time_left");
     width = glGetUniformLocation(program, "width");
     height = glGetUniformLocation(program, "height");
     edit_mode = glGetUniformLocation(program, "edit_mode");
@@ -99,6 +121,8 @@ SurfaceProgram::SurfaceProgram() {
     glUniform1i(glGetUniformLocation(program, "cube_tex"), 10);
     glUniform1i(glGetUniformLocation(program, "cone_tex"), 11);
     glUniform1i(glGetUniformLocation(program, "cylinder_tex"), 12);
+    glUniform1i(glGetUniformLocation(program, "clock_tex"), 13);
+    glUniform1i(glGetUniformLocation(program, "hand_tex"), 14);
 
 	glUseProgram(0);
 

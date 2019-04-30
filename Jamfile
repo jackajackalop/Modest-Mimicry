@@ -69,6 +69,7 @@ CLIENT_NAMES =
 	main
 	data_path
 	compile_program
+    effect_program
     main_program
     scene_program
     surface_program

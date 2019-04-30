@@ -11,6 +11,7 @@
 #include "compile_program.hpp" //helper to compile opengl shader programs
 #include "draw_text.hpp" //helper to... um.. draw text
 #include "load_save_png.hpp"
+#include "effect_program.hpp"
 #include "scene_program.hpp"
 #include "main_program.hpp"
 #include "surface_program.hpp"
@@ -191,6 +192,15 @@ Load< GLuint > cone_tex(LoadTagDefault, [](){
 Load< GLuint > cylinder_tex(LoadTagDefault, [](){
         return new GLuint(load_pic(data_path("textures/cylinder.png")));
         });
+Load< GLuint > clock_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/clock.png")));
+        });
+Load< GLuint > hand_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/hand.png")));
+        });
+Load< GLuint > spotlight_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/spotlight.png")));
+        });
 
 Load< GLuint > white_tex(LoadTagDefault, [](){
         GLuint tex = 0;
@@ -320,6 +330,7 @@ void GameMode::add_primitive(int primitive_type){
     state1.prim_num++;
     edit_mode = 0;
     std::cout<<"added primitive "<<primitive_type<<std::endl;
+    updated = true;
 }
 
 bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -367,7 +378,7 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
             if(x>0.36*width && x<0.41*width) add_primitive(1);
             else if(x>0.42*width && x<0.47*width) add_primitive(2);
             else if(x>0.48*width && x<0.53*width) add_primitive(3);
-            else if(x>0.54*width && x<0.59*width) add_primitive(4);
+            else if(x>0.54*width && x<0.60*width) add_primitive(4);
         }else if(edit_mode==4 && y>0.67*height && y<0.735*height){
             if(x>0.26*width && x<0.30*width) selected=0;
             else if(x>0.30*width && x<0.34*width) selected=1;
@@ -450,6 +461,7 @@ struct Textures {
     GLuint model_tex = 0;
     GLuint text_tex = 0;
     GLuint ui_tex = 0;
+    GLuint final_tex = 0;
     void allocate(glm::uvec2 const &new_size) {
         //allocate full-screen framebuffer:
 
@@ -476,6 +488,7 @@ struct Textures {
             alloc_tex(&model_tex, GL_RGBA, GL_RGBA);
             alloc_tex(&text_tex, GL_RGBA, GL_RGBA);
             alloc_tex(&ui_tex, GL_RGBA, GL_RGBA);
+            alloc_tex(&final_tex, GL_RGBA, GL_RGBA);
             GL_ERRORS();
         }
 
@@ -550,6 +563,10 @@ void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_,
     glBindTexture(GL_TEXTURE_2D, *cone_tex);
     glActiveTexture(GL_TEXTURE12);
     glBindTexture(GL_TEXTURE_2D, *cylinder_tex);
+    glActiveTexture(GL_TEXTURE13);
+    glBindTexture(GL_TEXTURE_2D, *clock_tex);
+    glActiveTexture(GL_TEXTURE14);
+    glBindTexture(GL_TEXTURE_2D, *hand_tex);
     glUseProgram(surface_program->program);
 
     int prim10[10] = {0};
@@ -561,6 +578,7 @@ void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_,
     glUniform1iv(surface_program->primitives, 10, prim10);
     glUniform1i(surface_program->width, width);
     glUniform1i(surface_program->height, height);
+    glUniform1i(surface_program->time_left, time_left);
     glUniform1i(surface_program->edit_mode, edit_mode);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -788,12 +806,58 @@ void GameMode::set_prim_uniforms(){
     glUniform1i(main_program->height, height);
 }
 
+void GameMode::draw_effect(GLuint color_tex, GLuint *final_tex_){
+    assert(final_tex_);
+    auto &final_tex = *final_tex_;
+
+    static GLuint fb = 0;
+    if(fb==0) glGenFramebuffers(1, &fb);
+    glBindFramebuffer(GL_FRAMEBUFFER, fb);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+            final_tex, 0);
+    GLenum bufs[1] = {GL_COLOR_ATTACHMENT0};
+    glDrawBuffers(1, bufs);
+    check_fb();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, fb);
+    glViewport(0,0, textures.size.x, textures.size.y);
+    camera->aspect = textures.size.x / float(textures.size.y);
+
+    GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    glClearBufferfv(GL_COLOR, 0, black);
+
+    //set up basic OpenGL state:
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, color_tex);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, *spotlight_tex);
+    glUseProgram(effect_program->program);
+
+    int scoreL = (playerNum=='0' ? state1.score : state2.score);
+    int scoreR = (playerNum=='0' ? state2.score : state1.score);
+    glUniform1i(effect_program->score1, scoreL);
+    glUniform1i(effect_program->score2, scoreR);
+    glUniform1i(effect_program->width, width);
+    glUniform1i(effect_program->height, height);
+
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+}
+
 void GameMode::draw(glm::uvec2 const &drawable_size) {
     textures.allocate(drawable_size);
     {//draw score and timer
         glDisable(GL_DEPTH_TEST);
-        std::string message ="SCORE"+std::to_string(playerNum=='0'?state1.score:state2.score);
-        float height = 0.05f;
         static GLuint fb = 0;
         if(fb==0) glGenFramebuffers(1, &fb);
         glBindFramebuffer(GL_FRAMEBUFFER, fb);
@@ -808,12 +872,15 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 
         GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
         glClearBufferfv(GL_COLOR, 0, black);
+       /* float height = 0.05f;
+        std::string message ="SCORE"+std::to_string(playerNum=='0'?state1.score:state2.score);
         draw_text(message, glm::vec2(-1.0,-0.58), height);
         message = "SCORE "+std::to_string(playerNum=='1'?state1.score:state2.score);
         draw_text(message, glm::vec2(1.0,-0.58), height);
         message = "TIME "+std::to_string(int(time_left));
         height = 0.1;
         draw_text(message, glm::vec2(-0.2, 0.8), height);
+        */
     }
     width = textures.size.x;
     height = textures.size.y;
@@ -825,6 +892,7 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
     draw_surface(&textures.bg_tex, &textures.model_tex, &textures.ui_tex);
     draw_main(textures.text_tex, textures.bg_tex, textures.model_tex,
             textures.ui_tex, &textures.color_tex, &textures.player_tex);
+    draw_effect(textures.color_tex, &textures.final_tex);
     if(updated) compare(textures.player_tex, textures.model_tex);
 
     glActiveTexture(GL_TEXTURE1);
@@ -837,7 +905,7 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 
     //Copy scene from color buffer to screen, performing post-processing effects:
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textures.color_tex);
+    glBindTexture(GL_TEXTURE_2D, textures.final_tex);
 
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);

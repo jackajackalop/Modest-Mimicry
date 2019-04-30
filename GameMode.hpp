@@ -34,6 +34,7 @@ struct GameMode : public Mode {
     void draw_surface(GLuint* color_tex_, GLuint* model_tex_, GLuint* ui_tex_);
     void draw_main(GLuint text_tex, GLuint bg_tex, GLuint model_tex,
             GLuint ui_tex_, GLuint* color_tex_, GLuint* player_tex_);
+    void draw_effect(GLuint color_tex, GLuint* final_tex_);
     void compare(GLuint player_tex, GLuint model_tex);
     void add_primitive(int primitive_type);
     void set_prim_uniforms();
