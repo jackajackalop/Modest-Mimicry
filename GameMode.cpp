@@ -224,6 +224,7 @@ Scene::Camera *camera = nullptr;
 
 int width =0, height =0;
 int time_left = 100;
+float pause_timer = 10.0f;
 int elapsed_time = 0;
 int edit_mode = 0; //0 for translation, 1 for rotation, 2 for scaling, 3 for adding primitives
 bool updated = false;
@@ -397,7 +398,15 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 }
 
 void GameMode::update(float elapsed) {
-    if(paused) return;
+    if(paused){
+        pause_timer -= elapsed;
+        if(pause_timer<=0.0){
+            paused = false;
+            level++;
+            reset();
+        }
+        return;
+    }
     camera_parent_transform->rotation = glm::angleAxis(camera_spin, glm::vec3(0.0f, 0.0f, 1.0f));
     //    spot_parent_transform->rotation = glm::angleAxis(spot_spin, glm::vec3(0.0f, 0.0f, 1.0f));
     time_left = (100*(level+1))-elapsed_time;
@@ -926,13 +935,14 @@ void GameMode::reset(){
     state2.prim_num = 0;
     updated = false;
     paused = false;
+    pause_timer = 10.0;
     state1.score = 0;
     state2.score = 0;
     selected = 0;
 }
 
 void GameMode::show_lose() {
-    std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
+    /*std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
 
     std::shared_ptr< Mode > game = shared_from_this();
     menu->background = game;
@@ -948,13 +958,14 @@ void GameMode::show_lose() {
             });
 
     menu->selected = 1;
+    Mode::set_current(menu);
+    */
     paused = true;
 
-    Mode::set_current(menu);
 }
 
 void GameMode::show_win() {
-    std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
+   /* std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
 
     std::shared_ptr< Mode > game = shared_from_this();
     menu->background = game;
@@ -970,8 +981,9 @@ void GameMode::show_win() {
             });
 
     menu->selected = 1;
+    Mode::set_current(menu);
+    */
     paused = true;
 
-    Mode::set_current(menu);
 }
 
