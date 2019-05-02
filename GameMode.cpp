@@ -409,7 +409,7 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 void GameMode::update(float elapsed) {
     if(screen==LOADING){
         pause_timer -= elapsed;
-        if(pause_timer<=0.0){
+        if(screen!=TITLE && pause_timer<=0.0){
             paused = false;
             level++;
             screen = GAME;
