@@ -197,10 +197,10 @@ MainProgram::MainProgram() {
         "   float tmin = 1.0; \n"
         "   float tmax = 20.0; \n"
         // raymarch primitives
-        "   vec2 tb = iBox( ro-vec3(0.0,0.4,0.0), rd, vec3(3,1.5,3) ); \n"
-        "   if( tb.x<tb.y && tb.y>0.0 && tb.x<tmax){ \n"
-        "       tmin = max(tb.x,tmin); \n"
-        "       tmax = min(tb.y,tmax); \n"
+  //      "   vec2 tb = iBox( ro-vec3(0.0,0.4,0.0), rd, vec3(3,1.5,3) ); \n"
+    //    "   if( tb.x<tb.y && tb.y>0.0 && tb.x<tmax){ \n"
+        "       tmin = 0;\n"// max(tb.x,tmin); \n"
+        "       tmax = 100; \n"//min(tb.y,tmax); \n"
 
         "       float t = tmin; \n"
         "       for( int i=0; i<70 && t<tmax; i++ ){ \n"
@@ -211,7 +211,7 @@ MainProgram::MainProgram() {
         "           }\n"
         "           t += h.x; \n"
         "       } \n"
-        "   } \n"
+      //  "   } \n"
 
         "   return res; \n"
         "} \n"

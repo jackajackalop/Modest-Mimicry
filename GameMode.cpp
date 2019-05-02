@@ -731,31 +731,33 @@ void GameMode::draw_main(GLuint text_tex, GLuint bg_tex, GLuint model_tex,
 
 void GameMode::compare(GLuint player_tex, GLuint model_tex){
     updated = false;
+    int w = width;
+    int h = height;
 
     glBindTexture(GL_TEXTURE_2D, player_tex);
-    GLuint *p_pixels = new GLuint[width*height*4];
+    GLuint *p_pixels = new GLuint[w*h*4];
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_INT, p_pixels);
-    GLuint *m_pixels = new GLuint[width*height*4];
+    GLuint *m_pixels = new GLuint[w*h*4];
     glBindTexture(GL_TEXTURE_2D, model_tex);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_INT, m_pixels);
     glBindTexture(GL_TEXTURE_2D, 0);
     GL_ERRORS();
 
-    int p_xoffset = width;
-    int p_yoffset = height;
+    int p_xoffset = w;
+    int p_yoffset = h;
     int p_xend = 0;
     int p_yend = 0;
     int jmin, jmax;
     if(playerNum=='0'){
-        jmin = 0.078*width;
-        jmax = 0.4*width;
+        jmin = 0.078*w;
+        jmax = 0.4*w;
     }else{
-        jmin = 0.688*width;
-        jmax = 0.99*width;
+        jmin = 0.688*w;
+        jmax = 0.99*w;
     }
-    for(int i = 0.25*height; i<0.85*height; i++){
+    for(int i = 0.25*h; i<0.85*h; i++){
         for(int j = jmin; j<jmax; j++){
-            int index = (j+i*width)*4;
+            int index = (j+i*w)*4;
             if((p_pixels[index]&0xFF)>0){
                 p_xoffset = glm::min(p_xoffset, j);
                 p_yoffset = glm::min(p_yoffset, i);
@@ -768,13 +770,13 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
     //std::cout<<p2_xoffset<<" "<<p2_xend<<std::endl;
     //   std::cout<<p_yoffset<<" "<<p_yend<<std::endl;
 
-    int m_xoffset = width;
-    int m_yoffset = height;
+    int m_xoffset = w;
+    int m_yoffset = h;
     int m_xend = 0;
     int m_yend = 0;
-    for(int i = 0.5*height; i<0.875*height; i++){
-        for(int j = 0.45*width; j<0.625*width; j++){
-            int index = (j+i*width)*4;
+    for(int i = 0.5*h; i<0.875*h; i++){
+        for(int j = 0.45*w; j<0.625*w; j++){
+            int index = (j+i*w)*4;
             if((m_pixels[index]&0xFF)>0){
                 m_xoffset = glm::min(m_xoffset, j);
                 m_yoffset = glm::min(m_yoffset, i);
@@ -797,17 +799,19 @@ void GameMode::compare(GLuint player_tex, GLuint model_tex){
         for(int j = 0; j<jend; j++){
             int mi = (m_yoffset+i)*4, mj = (m_xoffset+j)*4;
             int pi = (p_yoffset+i*p_yscale)*4, pj = (p_xoffset+j*p_xscale)*4;
-            int m_index = mj+mi*width;
-            int p_index = pj+pi*width;
+            int m_index = mj+mi*w;
+            int p_index = pj+pi*w;
             int m_color = (m_pixels[m_index]&0xFF00>>8);
             int p_color = (p_pixels[p_index]&0xFF00>>8);
-            if(m_color>0)
+            if(m_color<100)
                 max_score++;
-            if(m_color>0 && p_color>0)
+            if(m_color<100 && p_color<100)
                 state1.score++;
+            //std::cout<<m_color<<"/"<<p_color<<std::endl;
         }
     }
-    state1.score = state1.score*200/max_score;
+    //std::cout<<state1.score<<"/"<<max_score<<std::endl;
+    state1.score = state1.score*100/max_score;
     state1.score = glm::clamp(state1.score, 0, 100);
 
     delete[] p_pixels;
@@ -944,6 +948,11 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 
         GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
         glClearBufferfv(GL_COLOR, 0, black);
+        float height = 0.05f;
+        std::string message ="SCORE"+std::to_string(playerNum=='0'?state1.score:state2.score);
+        draw_text(message, glm::vec2(-1.0,-0.58), height);
+        message = "SCORE "+std::to_string(playerNum=='1'?state1.score:state2.score);
+        draw_text(message, glm::vec2(1.0,-0.58), height);
     }
     width = textures.size.x;
     height = textures.size.y;
