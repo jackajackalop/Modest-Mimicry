@@ -241,7 +241,7 @@ float pause_timer = 10.0f;
 int elapsed_time = 0;
 int edit_mode = 0; //0 for translation, 1 for rotation, 2 for scaling, 3 for adding primitives
 bool updated = false;
-bool paused = false;
+bool paused = true;
 Game state1, state2;
 int wins = 0;
 enum Stage{
@@ -251,7 +251,7 @@ enum Stage{
     TITLE = 3,
     GAME = 4
 };
-int screen = GAME;
+int screen = TITLE;
 
 Load< Scene > scene(LoadTagDefault, [](){
         Scene *ret = new Scene;
@@ -343,6 +343,10 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     //ignore any keys that are the result of automatic key repeat:
 
     if (evt.type == SDL_KEYDOWN) {
+        if(screen == TITLE){
+            screen = GAME;
+            paused = false;
+        }
         updated = true;
         if(evt.key.keysym.scancode == SDL_SCANCODE_A){
             if(edit_mode==0) state1.primitives[selected].position.z+=0.1;
@@ -403,13 +407,18 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 }
 
 void GameMode::update(float elapsed) {
-    if(paused){
+    if(screen==LOADING){
         pause_timer -= elapsed;
         if(pause_timer<=0.0){
             paused = false;
             level++;
             screen = GAME;
             reset();
+            if(level>4){
+                level = 0;
+                screen = TITLE;
+                paused = true;
+            }
         }
         return;
     }
@@ -961,7 +970,9 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 
     //Copy scene from color buffer to screen, performing post-processing effects:
     glActiveTexture(GL_TEXTURE0);
-    if(screen == LOADING){
+    if(screen == TITLE){
+        glBindTexture(GL_TEXTURE_2D, textures.title_tex);
+    }else if(screen == LOADING){
         glBindTexture(GL_TEXTURE_2D, textures.loading_tex);
     }else if(screen == WIN){
         glBindTexture(GL_TEXTURE_2D, textures.win_tex);
