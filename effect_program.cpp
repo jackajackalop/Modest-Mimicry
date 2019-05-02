@@ -29,9 +29,10 @@ EffectProgram::EffectProgram() {
         "   vec4 spotlight_color = texture(spotlight_tex, texCoord1); \n"
         "   color_out = texelFetch(game_tex, ivec2(gl_FragCoord.xy), 0); \n"
         "   color_out*=0.7;\n"
-        "   color_out+=spotlight_color*(score1/300.0);\n"
+        "   float factor = mix(0.0, 0.7, score1/100.0);"
+        "   color_out*=1.0+spotlight_color*factor;\n"
         "   spotlight_color = texture(spotlight_tex, texCoord2); \n"
-        "   color_out+=spotlight_color*(score2/300.0);\n"
+        "   color_out*=1.0+spotlight_color*(score2/200.0);\n"
 
         "   for(int i = 0; i<wins1; i++){\n"
         "       texCoord1 = (vec2(20.0, 8.0)*gl_FragCoord.xy-vec2(width*i, 7.0*height)); \n"

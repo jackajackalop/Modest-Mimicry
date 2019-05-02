@@ -384,7 +384,7 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
             else if(x>0.48*width && x<0.53*width) edit_mode = 2;
             else if(x>0.56*width && x<0.61*width) edit_mode = 3;
             else if(x>0.65*width && x<0.70*width) edit_mode = 4;
-        }else if(edit_mode==3 && y>0.675*height && y<0.70*height){
+        }else if(edit_mode==3 && y>0.67*height && y<0.71*height){
             if(x>0.36*width && x<0.41*width) add_primitive(1);
             else if(x>0.42*width && x<0.47*width) add_primitive(2);
             else if(x>0.48*width && x<0.53*width) add_primitive(3);
@@ -915,6 +915,7 @@ void GameMode::draw_effect(GLuint color_tex, GLuint *final_tex_){
     int scoreL = (playerNum=='0' ? state1.score : state2.score);
     int scoreR = (playerNum=='0' ? state2.score : state1.score);
     int winsL = (playerNum=='0' ? wins : level-wins);
+   // std::cout<<scoreL<<std::endl;
     glUniform1i(effect_program->score1, scoreL);
     glUniform1i(effect_program->score2, scoreR);
     glUniform1i(effect_program->width, width);
@@ -932,28 +933,6 @@ void GameMode::draw_effect(GLuint color_tex, GLuint *final_tex_){
 
 void GameMode::draw(glm::uvec2 const &drawable_size) {
     textures.allocate(drawable_size);
-    {//draw score and timer
-        glDisable(GL_DEPTH_TEST);
-        static GLuint fb = 0;
-        if(fb==0) glGenFramebuffers(1, &fb);
-        glBindFramebuffer(GL_FRAMEBUFFER, fb);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                GL_TEXTURE_2D, textures.text_tex, 0);
-
-        {
-            GLenum bufs[1] = {GL_COLOR_ATTACHMENT0};
-            glDrawBuffers(1, bufs);
-        }
-        check_fb();
-
-        GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-        glClearBufferfv(GL_COLOR, 0, black);
-        float height = 0.05f;
-        std::string message ="SCORE"+std::to_string(playerNum=='0'?state1.score:state2.score);
-        draw_text(message, glm::vec2(-1.0,-0.58), height);
-        message = "SCORE "+std::to_string(playerNum=='1'?state1.score:state2.score);
-        draw_text(message, glm::vec2(1.0,-0.58), height);
-    }
     width = textures.size.x;
     height = textures.size.y;
 
