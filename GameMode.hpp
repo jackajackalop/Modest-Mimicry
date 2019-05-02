@@ -31,7 +31,9 @@ struct GameMode : public Mode {
 
 	//draw is called after update:
 	virtual void draw(glm::uvec2 const &drawable_size) override;
-    void draw_surface(GLuint* color_tex_, GLuint* model_tex_, GLuint* ui_tex_);
+    void draw_surface(GLuint* color_tex_, GLuint* model_tex_, GLuint* ui_tex_,
+            GLuint *win_tex_, GLuint *lose_tex_, GLuint *title_tex,
+            GLuint *loading_tex_);
     void draw_main(GLuint text_tex, GLuint bg_tex, GLuint model_tex,
             GLuint ui_tex_, GLuint* color_tex_, GLuint* player_tex_);
     void draw_effect(GLuint color_tex, GLuint* final_tex_);

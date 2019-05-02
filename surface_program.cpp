@@ -31,9 +31,17 @@ SurfaceProgram::SurfaceProgram() {
 		"uniform sampler2D cylinder_tex;\n"
         "uniform sampler2D clock_tex;\n"
         "uniform sampler2D hand_tex;\n"
+        "uniform sampler2D win_tex;\n"
+		"uniform sampler2D lose_tex;\n"
+        "uniform sampler2D title_tex;\n"
+        "uniform sampler2D loading_tex;\n "
         "layout(location=0) out vec4 bg_out;\n"
         "layout(location=1) out vec4 model_out;\n"
         "layout(location=2) out vec4 ui_out;\n"
+        "layout(location=3) out vec4 win_out;\n"
+        "layout(location=4) out vec4 lose_out;\n"
+        "layout(location=5) out vec4 title_out;\n"
+        "layout(location=6) out vec4 loading_out;\n"
 
         "mat2 rotateX(float theta) { \n"
         "   float c = cos(theta); \n"
@@ -47,6 +55,10 @@ SurfaceProgram::SurfaceProgram() {
         "   vec2 texCoord = gl_FragCoord.xy/vec2(width, height); \n"
 		"	bg_out = texture(bg_tex, texCoord);\n"
 		"	model_out = texture(model_tex, texCoord);\n"
+		"	win_out = texture(win_tex, texCoord);\n"
+		"	lose_out = texture(lose_tex, texCoord);\n"
+		"	title_out = texture(title_tex, texCoord);\n"
+		"	loading_out = texture(loading_tex, texCoord);\n"
         "   texCoord = (vec2(2.0, 2.0)*gl_FragCoord.xy)-vec2(0.45*width, -0.1*height); \n"
         "   vec2 texCoordPlus = texCoord-vec2(0.0, 0.1*height); \n"
         "   texCoord = texCoord/vec2(width, height); \n"
@@ -123,6 +135,10 @@ SurfaceProgram::SurfaceProgram() {
     glUniform1i(glGetUniformLocation(program, "cylinder_tex"), 12);
     glUniform1i(glGetUniformLocation(program, "clock_tex"), 13);
     glUniform1i(glGetUniformLocation(program, "hand_tex"), 14);
+    glUniform1i(glGetUniformLocation(program, "win_tex"), 15);
+    glUniform1i(glGetUniformLocation(program, "lose_tex"), 16);
+    glUniform1i(glGetUniformLocation(program, "title_tex"), 17);
+    glUniform1i(glGetUniformLocation(program, "loading_tex"), 18);
 
 	glUseProgram(0);
 

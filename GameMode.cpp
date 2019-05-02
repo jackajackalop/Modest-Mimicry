@@ -201,6 +201,21 @@ Load< GLuint > hand_tex(LoadTagDefault, [](){
 Load< GLuint > spotlight_tex(LoadTagDefault, [](){
         return new GLuint(load_pic(data_path("textures/spotlight.png")));
         });
+Load< GLuint > award_tex(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/award.png")));
+        });
+Load< GLuint > win(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/win.png")));
+        });
+Load< GLuint > lose(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/lose.png")));
+        });
+Load< GLuint > loading(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/loading.png")));
+        });
+Load< GLuint > title(LoadTagDefault, [](){
+        return new GLuint(load_pic(data_path("textures/title.png")));
+        });
 
 Load< GLuint > white_tex(LoadTagDefault, [](){
         GLuint tex = 0;
@@ -219,8 +234,6 @@ Load< GLuint > white_tex(LoadTagDefault, [](){
 
 Scene::Transform *camera_parent_transform = nullptr;
 Scene::Camera *camera = nullptr;
-//Scene::Transform *spot_parent_transform = nullptr;
-//Scene::Lamp *spot = nullptr;
 
 int width =0, height =0;
 int time_left = 100;
@@ -230,6 +243,15 @@ int edit_mode = 0; //0 for translation, 1 for rotation, 2 for scaling, 3 for add
 bool updated = false;
 bool paused = false;
 Game state1, state2;
+int wins = 0;
+enum Stage{
+    LOADING = 0,
+    WIN = 1,
+    LOSE = 2,
+    TITLE = 3,
+    GAME = 4
+};
+int screen = GAME;
 
 Load< Scene > scene(LoadTagDefault, [](){
         Scene *ret = new Scene;
@@ -276,14 +298,8 @@ Load< Scene > scene(LoadTagDefault, [](){
                 if (camera_parent_transform) throw std::runtime_error("Multiple 'CameraParent' transforms in scene.");
                 camera_parent_transform = t;
             }
-            /*        if (t->name == "SpotParent") {
-                    if (spot_parent_transform) throw std::runtime_error("Multiple 'SpotParent' transforms in scene.");
-                    spot_parent_transform = t;
-                    }
-                    */
         }
         if (!camera_parent_transform) throw std::runtime_error("No 'CameraParent' transform in scene.");
-        //    if (!spot_parent_transform) throw std::runtime_error("No 'SpotParent' transform in scene.");
 
         //look up the camera:
         for (Scene::Camera *c = ret->first_camera; c != nullptr; c = c->alloc_next) {
@@ -293,17 +309,6 @@ Load< Scene > scene(LoadTagDefault, [](){
             }
         }
         if (!camera) throw std::runtime_error("No 'Camera' camera in scene.");
-        /*
-        //look up the spotlight:
-        for (Scene::Lamp *l = ret->first_lamp; l != nullptr; l = l->alloc_next) {
-        if (l->transform->name == "Spot") {
-        if (spot) throw std::runtime_error("Multiple 'Spot' objects in scene.");
-        if (l->type != Scene::Lamp::Spot) throw std::runtime_error("Lamp 'Spot' is not a spotlight.");
-        spot = l;
-        }
-        }
-        if (!spot) throw std::runtime_error("No 'Spot' spotlight in scene.");
-        */
 
         return ret;
 });
@@ -403,20 +408,30 @@ void GameMode::update(float elapsed) {
         if(pause_timer<=0.0){
             paused = false;
             level++;
+            screen = GAME;
             reset();
         }
         return;
     }
     camera_parent_transform->rotation = glm::angleAxis(camera_spin, glm::vec3(0.0f, 0.0f, 1.0f));
-    //    spot_parent_transform->rotation = glm::angleAxis(spot_spin, glm::vec3(0.0f, 0.0f, 1.0f));
     time_left = (100*(level+1))-elapsed_time;
     if(time_left<=0){
+        screen = LOADING;
         if(state1.score>state2.score){
-            show_win();
+            wins++;
+            paused = true;
+            screen = LOADING;
         }else{
-            show_lose();
+            paused = true;
+            screen = LOADING;
         }
+        if(level >= 4){
+            if(wins>=3) screen = WIN;
+            else screen = LOSE;
+        }
+
     }
+
 
     if (client.connection) {
         //send game state to server:
@@ -454,7 +469,6 @@ void GameMode::update(float elapsed) {
             }
             }
     });
-
 }
 
 //GameMode will render to some offscreen framebuffer(s).
@@ -471,6 +485,10 @@ struct Textures {
     GLuint text_tex = 0;
     GLuint ui_tex = 0;
     GLuint final_tex = 0;
+    GLuint win_tex = 0;
+    GLuint lose_tex = 0;
+    GLuint title_tex = 0;
+    GLuint loading_tex = 0;
     void allocate(glm::uvec2 const &new_size) {
         //allocate full-screen framebuffer:
 
@@ -498,6 +516,10 @@ struct Textures {
             alloc_tex(&text_tex, GL_RGBA, GL_RGBA);
             alloc_tex(&ui_tex, GL_RGBA, GL_RGBA);
             alloc_tex(&final_tex, GL_RGBA, GL_RGBA);
+            alloc_tex(&lose_tex, GL_RGBA, GL_RGBA);
+            alloc_tex(&win_tex, GL_RGBA, GL_RGBA);
+            alloc_tex(&title_tex, GL_RGBA, GL_RGBA);
+            alloc_tex(&loading_tex, GL_RGBA, GL_RGBA);
             GL_ERRORS();
         }
 
@@ -505,13 +527,22 @@ struct Textures {
 } textures;
 
 void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_,
-        GLuint *ui_tex_){
+        GLuint *ui_tex_, GLuint *win_tex_, GLuint* lose_tex_,
+        GLuint* title_tex_, GLuint *loading_tex_){
     assert(bg_tex_);
     assert(model_tex_);
     assert(ui_tex_);
+    assert(win_tex_);
+    assert(lose_tex_);
+    assert(title_tex_);
+    assert(loading_tex_);
     auto &bg_tex = *bg_tex_;
     auto &model_tex = *model_tex_;
     auto &ui_tex = *ui_tex_;
+    auto &win_tex = *win_tex_;
+    auto &lose_tex = *lose_tex_;
+    auto &title_tex = *title_tex_;
+    auto &loading_tex = *loading_tex_;
 
     static GLuint fb = 0;
     if(fb==0) glGenFramebuffers(1, &fb);
@@ -522,9 +553,20 @@ void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_,
             model_tex, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
             ui_tex, 0);
-    GLenum bufs[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
-                        GL_COLOR_ATTACHMENT2};
-    glDrawBuffers(3, bufs);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D,
+            win_tex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D,
+            lose_tex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, GL_TEXTURE_2D,
+            title_tex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT6, GL_TEXTURE_2D,
+            loading_tex, 0);
+
+    GLenum bufs[7] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
+                        GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3,
+                        GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5,
+                        GL_COLOR_ATTACHMENT6};
+    glDrawBuffers(7, bufs);
     check_fb();
 
     glBindFramebuffer(GL_FRAMEBUFFER, fb);
@@ -576,6 +618,14 @@ void GameMode::draw_surface(GLuint *bg_tex_, GLuint *model_tex_,
     glBindTexture(GL_TEXTURE_2D, *clock_tex);
     glActiveTexture(GL_TEXTURE14);
     glBindTexture(GL_TEXTURE_2D, *hand_tex);
+    glActiveTexture(GL_TEXTURE15);
+    glBindTexture(GL_TEXTURE_2D, *win);
+    glActiveTexture(GL_TEXTURE16);
+    glBindTexture(GL_TEXTURE_2D, *lose);
+    glActiveTexture(GL_TEXTURE17);
+    glBindTexture(GL_TEXTURE_2D, *title);
+    glActiveTexture(GL_TEXTURE18);
+    glBindTexture(GL_TEXTURE_2D, *loading);
     glUseProgram(surface_program->program);
 
     int prim10[10] = {0};
@@ -845,15 +895,19 @@ void GameMode::draw_effect(GLuint color_tex, GLuint *final_tex_){
     glBindTexture(GL_TEXTURE_2D, color_tex);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, *spotlight_tex);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, *award_tex);
     glUseProgram(effect_program->program);
 
     int scoreL = (playerNum=='0' ? state1.score : state2.score);
     int scoreR = (playerNum=='0' ? state2.score : state1.score);
+    int winsL = (playerNum=='0' ? wins : level-wins);
     glUniform1i(effect_program->score1, scoreL);
     glUniform1i(effect_program->score2, scoreR);
     glUniform1i(effect_program->width, width);
     glUniform1i(effect_program->height, height);
-
+    glUniform1i(effect_program->wins1, winsL);
+    glUniform1i(effect_program->wins2, level-winsL);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glActiveTexture(GL_TEXTURE0);
@@ -881,15 +935,6 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 
         GLfloat black[4] = {0.0f, 0.0f, 0.0f, 0.0f};
         glClearBufferfv(GL_COLOR, 0, black);
-       /* float height = 0.05f;
-        std::string message ="SCORE"+std::to_string(playerNum=='0'?state1.score:state2.score);
-        draw_text(message, glm::vec2(-1.0,-0.58), height);
-        message = "SCORE "+std::to_string(playerNum=='1'?state1.score:state2.score);
-        draw_text(message, glm::vec2(1.0,-0.58), height);
-        message = "TIME "+std::to_string(int(time_left));
-        height = 0.1;
-        draw_text(message, glm::vec2(-0.2, 0.8), height);
-        */
     }
     width = textures.size.x;
     height = textures.size.y;
@@ -898,7 +943,9 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
     glUniform3fv(scene_program->viewPos, 1,
             glm::value_ptr(camera->transform->make_local_to_world()));
     scene->draw(camera);
-    draw_surface(&textures.bg_tex, &textures.model_tex, &textures.ui_tex);
+    draw_surface(&textures.bg_tex, &textures.model_tex, &textures.ui_tex,
+            &textures.win_tex, &textures.lose_tex, &textures.title_tex,
+            &textures.loading_tex);
     draw_main(textures.text_tex, textures.bg_tex, textures.model_tex,
             textures.ui_tex, &textures.color_tex, &textures.player_tex);
     draw_effect(textures.color_tex, &textures.final_tex);
@@ -914,7 +961,15 @@ void GameMode::draw(glm::uvec2 const &drawable_size) {
 
     //Copy scene from color buffer to screen, performing post-processing effects:
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textures.final_tex);
+    if(screen == LOADING){
+        glBindTexture(GL_TEXTURE_2D, textures.loading_tex);
+    }else if(screen == WIN){
+        glBindTexture(GL_TEXTURE_2D, textures.win_tex);
+    }else if(screen == LOSE){
+        glBindTexture(GL_TEXTURE_2D, textures.lose_tex);
+    }else{
+        glBindTexture(GL_TEXTURE_2D, textures.final_tex);
+    }
 
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
@@ -939,51 +994,5 @@ void GameMode::reset(){
     state1.score = 0;
     state2.score = 0;
     selected = 0;
-}
-
-void GameMode::show_lose() {
-    /*std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
-
-    std::shared_ptr< Mode > game = shared_from_this();
-    menu->background = game;
-
-    menu->choices.emplace_back("YOU LOST");
-    menu->choices.emplace_back("CONTINUE", [this, game](){
-            level++;
-            reset();
-            Mode::set_current(game);
-            });
-    menu->choices.emplace_back("QUIT", [](){
-            Mode::set_current(nullptr);
-            });
-
-    menu->selected = 1;
-    Mode::set_current(menu);
-    */
-    paused = true;
-
-}
-
-void GameMode::show_win() {
-   /* std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
-
-    std::shared_ptr< Mode > game = shared_from_this();
-    menu->background = game;
-
-    menu->choices.emplace_back("YOU WON");
-    menu->choices.emplace_back("CONTINUE", [this, game](){
-            level++;
-            reset();
-            Mode::set_current(game);
-            });
-    menu->choices.emplace_back("QUIT", [](){
-            Mode::set_current(nullptr);
-            });
-
-    menu->selected = 1;
-    Mode::set_current(menu);
-    */
-    paused = true;
-
 }
 

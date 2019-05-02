@@ -12,6 +12,8 @@ struct EffectProgram {
     GLuint score2 = -1U;
     GLuint width = -1U;
     GLuint height = -1U;
+    GLuint wins1 = -1U;
+    GLuint wins2 = -1U;
 
 	//uniform locations:
 	EffectProgram();
